@@ -11,7 +11,6 @@ all: $(EXECUTABLE)
 OBJDIR=objs
 CXX=g++ -m64
 CXXFLAGS=-O3 -Wall
-# Add in cuda library?
 LDFLAGS=-L/usr/local/cuda-11.2/lib64/ -lcudart -lcublas -lcusolver
 NVCC=nvcc
 NVCCFLAGS= -O3 -m64 --gpu-architecture compute_61 -ccbin /usr/bin/gcc-8 
