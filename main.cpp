@@ -1,9 +1,8 @@
-#include <getopt.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string>
+
 void cuda_example();
+int cublas_example();
+
 int main() {
-  cuda_example();
+  cublas_example();
   return 1;
 }
