@@ -22,8 +22,18 @@ void printMatrix(int m, int n, const float *A, int lda, const char *name) {
   for (int row = 0; row < m; row++) {
     for (int col = 0; col < n; col++) {
       float Areg = A[row + col * lda];
-      printf("%s(%d,%d) = %20.16E\n", name, row + 1, col + 1, Areg);
+      printf("%s(%d,%d) = %.3f\n", name, row + 1, col + 1, Areg);
     }
+  }
+}
+
+void printMatrixcsv(int m, int n, const float *A, int lda, const char *name) {
+  for (int row = 0; row < m; row++) {
+    for (int col = 0; col < n; col++) {
+      float Areg = A[row + col * lda];
+      printf("%.3f,", Areg);
+    }
+    printf("\n");
   }
 }
 
@@ -35,7 +45,7 @@ void printVector(int m, const float *A, const char *name) {
   }
 }
 
-svd_t perform_svd(float *A, int m, int n) {
+svd_t perform_svd(float *d_A, int m, int n) {
   cusolverDnHandle_t cusolverH = NULL;
   cudaStream_t stream = NULL;
   gesvdjInfo_t gesvdj_params = NULL;
@@ -64,7 +74,7 @@ svd_t perform_svd(float *A, int m, int n) {
   /* exact singular values */
   //  TODO s_exact is for testing, remove
   float S_exact[2 * 3] = {6.3, 3.16};
-  float *d_A = NULL;    /* device copy of A */
+  //   float *d_A = NULL;    /* device copy of A */
   float *d_S = NULL;    /* singular values */
   float *d_U = NULL;    /* left singular vectors */
   float *d_V = NULL;    /* right singular vectors */
@@ -89,7 +99,7 @@ svd_t perform_svd(float *A, int m, int n) {
   printf("econ = %d \n", econ);
 
   printf("A = (matlab base-1)\n");
-  printMatrix(m, n, A, lda, "A");
+  //   printMatrix(m, n, A, lda, "A");
   printf("=====\n");
 
   /* step 1: create cusolver handle, bind a stream */
@@ -115,7 +125,7 @@ svd_t perform_svd(float *A, int m, int n) {
   assert(CUSOLVER_STATUS_SUCCESS == status);
 
   /* step 3: copy A and B to device */
-  cudaStat1 = cudaMalloc((void **)&d_A, sizeof(float) * lda * n);
+  //   cudaStat1 = cudaMalloc((void **)&d_A, sizeof(float) * lda * n);
   cudaStat2 = cudaMalloc((void **)&d_S, sizeof(float) * minmn);
   cudaStat3 = cudaMalloc((void **)&d_U, sizeof(float) * ldu * m);
   cudaStat4 = cudaMalloc((void **)&d_V, sizeof(float) * ldv * n);
@@ -126,8 +136,8 @@ svd_t perform_svd(float *A, int m, int n) {
   assert(cudaSuccess == cudaStat4);
   assert(cudaSuccess == cudaStat5);
 
-  cudaStat1 =
-      cudaMemcpy(d_A, A, sizeof(float) * lda * n, cudaMemcpyHostToDevice);
+  //   cudaStat1 =
+  //   cudaMemcpy(d_A, A, sizeof(float) * lda * n, cudaMemcpyHostToDevice);
   assert(cudaSuccess == cudaStat1);
   /* step 4: query workspace of SVD */
   status = cusolverDnSgesvdj_bufferSize(
@@ -233,12 +243,12 @@ svd_t perform_svd(float *A, int m, int n) {
   /*  free resources  */
   if (d_A)
     cudaFree(d_A);
-  if (d_S)
-    cudaFree(d_S);
-  if (d_U)
-    cudaFree(d_U);
-  if (d_V)
-    cudaFree(d_V);
+  //   if (d_S)
+  //     cudaFree(d_S);
+  //   if (d_U)
+  //     cudaFree(d_U);
+  //   if (d_V)
+  //     cudaFree(d_V);
   if (d_info)
     cudaFree(d_info);
   if (d_work)
