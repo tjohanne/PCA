@@ -27,6 +27,14 @@ void printMatrix(int m, int n, const float *A, int lda, const char *name) {
   }
 }
 
+void printVector(int m, const float *A, const char *name) {
+  for (int i = 0; i < m; i++) {
+    float Areg = A[i];
+    printf("%.6f\n", Areg);
+    printf("%s(%d) = %.3f\n", name, i, Areg);
+  }
+}
+
 svd_t perform_svd(float *A, int m, int n) {
   cusolverDnHandle_t cusolverH = NULL;
   cudaStream_t stream = NULL;
