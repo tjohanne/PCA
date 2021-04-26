@@ -2,11 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define M 6
-#define N 5
-#define IDX2F(i, j, ld) ((((j)) * (ld)) + ((i)))
-
 #include "cublas_v2.h"
+#include "svd.cuh"
 #include <cuda_runtime.h>
 #ifndef min
 #define min(a, b) ((a < b) ? a : b)
@@ -44,118 +41,11 @@
 // like how you compile and load OpenGL shaders from
 // C/C++ code.
 //
-__global__ void add(int *a, int *b) {
-  int i = blockIdx.x;
-  if (i < N) {
-    b[i] = 2 * a[i];
-  }
-}
 
-static __inline__ void modify(cublasHandle_t handle, float *m, int ldm, int n,
-                              int p, int q, float alpha, float beta) {
-  cublasSscal(handle, n - q + 1, &alpha, &m[IDX2F(p, q, ldm)], ldm);
-  cublasSscal(handle, ldm - p + 1, &beta, &m[IDX2F(p, q, ldm)], 1);
-}
-
-int cublas_example() {
-  cudaError_t cudaStat;
-  cublasStatus_t stat;
-  cublasHandle_t handle;
-  int i, j;
-  float *devPtrA;
-  float *a = 0;
-  a = (float *)malloc(M * N * sizeof(*a));
-  if (!a) {
-    printf("host memory allocation failed");
-    return EXIT_FAILURE;
-  }
-  for (j = 0; j < N; j++) {
-    for (i = 0; i < M; i++) {
-      a[j * M + i] = (float)((i)*N + j);
-    }
-  }
-  cudaStat = cudaMalloc((void **)&devPtrA, M * N * sizeof(*a));
-  if (cudaStat != cudaSuccess) {
-    printf("device memory allocation failed");
-    return EXIT_FAILURE;
-  }
-  stat = cublasCreate(&handle);
-  if (stat != CUBLAS_STATUS_SUCCESS) {
-    printf("CUBLAS initialization failed\n");
-    return EXIT_FAILURE;
-  }
-  stat = cublasSetMatrix(M, N, sizeof(*a), a, M, devPtrA, M);
-  if (stat != CUBLAS_STATUS_SUCCESS) {
-    printf("data download failed");
-    cudaFree(devPtrA);
-    cublasDestroy(handle);
-    return EXIT_FAILURE;
-  }
-  modify(handle, devPtrA, M, N, 2, 3, 16.0f, 12.0f);
-  stat = cublasGetMatrix(M, N, sizeof(*a), devPtrA, M, a, M);
-  if (stat != CUBLAS_STATUS_SUCCESS) {
-    printf("data upload failed");
-    cudaFree(devPtrA);
-    cublasDestroy(handle);
-    return EXIT_FAILURE;
-  }
-  cudaFree(devPtrA);
-  cublasDestroy(handle);
-  for (j = 0; j < N; j++) {
-    for (i = 0; i < M; i++) {
-      printf("%7.0f", a[j * M + i]);
-    }
-    printf("\n");
-  }
-  free(a);
-  return EXIT_SUCCESS;
-}
-
-void cuda_example() {
-  //
-  // Create int arrays on the CPU.
-  // ('h' stands for "host".)
-  //
-  int ha[N], hb[N];
-
-  //
-  // Create corresponding int arrays on the GPU.
-  // ('d' stands for "device".)
-  //
-  int *da, *db;
-  cudaMalloc((void **)&da, N * sizeof(int));
-  cudaMalloc((void **)&db, N * sizeof(int));
-
-  //
-  // Initialise the input data on the CPU.
-  //
-  for (int i = 0; i < N; ++i) {
-    ha[i] = i;
-  }
-
-  //
-  // Copy input data to array on GPU.
-  //
-  cudaMemcpy(da, ha, N * sizeof(int), cudaMemcpyHostToDevice);
-
-  //
-  // Launch GPU code with N threads, one per
-  // array element.
-  //
-  add<<<N, 1>>>(da, db);
-
-  //
-  // Copy output array from GPU back to CPU.
-  //
-  cudaMemcpy(hb, db, N * sizeof(int), cudaMemcpyDeviceToHost);
-
-  for (int i = 0; i < N; ++i) {
-    printf("%d\n", hb[i]);
-  }
-
-  //
-  // Free up the arrays on the GPU.
-  //
-  cudaFree(da);
-  cudaFree(db);
+void perform_pca(float *matrix, int M, int N) {
+  matrix[0] = 4.0;
+  matrix[1] = 0.0;
+  matrix[2] = 3.0;
+  matrix[3] = -5.0;
+  svd_t svd = perform_svd(matrix, 2, 2);
 }
