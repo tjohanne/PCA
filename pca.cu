@@ -1,3 +1,4 @@
+#include <iostream>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,6 +74,33 @@ inline void cublasAssert(cublasStatus_t code, const char *file, int line,
 #define cudaCheckError(ans) ans
 #endif
 
+__global__ void get_average_from_total(float *total, int n, int m) {
+  int row = blockIdx.x * blockDim.x + threadIdx.x;
+  if (row < n) {
+    total[row] = total[row] / m;
+  }
+  __syncthreads();
+}
+
+__global__ void subtract(float *matrix, float *averages, int m, int n) {
+  int col = blockIdx.y * blockDim.y + threadIdx.y;
+  int row = blockIdx.x * blockDim.x + threadIdx.x;
+  if (col < n && row < m) {
+    matrix[row * n + col] = matrix[row * n + col] - averages[col];
+  }
+  __syncthreads();
+}
+
+void print_cpu_matrix(int m, int n, const float *A, const char *name) {
+  for (int row = 0; row < m; row++) {
+    for (int col = 0; col < n; col++) {
+      float Areg = A[col + row * n];
+      printf("%.3f,", Areg);
+    }
+    printf("\n");
+  }
+}
+
 float *mean_shift(float *matrix, int M, int N) {
   cublasHandle_t handle;
   float *x = new float[M];
@@ -86,13 +114,14 @@ float *mean_shift(float *matrix, int M, int N) {
   // *alpha = 1.0f;
   // float *beta = new float[1];
   // *beta = 1.0f;
+  printMatrix(M, N, matrix, M, "matrix");
   for (int i = 0; i < M; i++) {
     x[i] = 1.0f;
   }
   for (int i = 0; i < N; i++) {
     y[i] = 0.0f;
   }
-  printVector(M, x, "X");
+  // will need to call cublasDestroy() at some point
   cublasCheckError(cublasCreate(&handle));
   cudaCheckError(cudaMalloc((void **)&d_matrix, M * N * sizeof(float)));
   cudaCheckError(cudaMalloc((void **)&d_x, M * sizeof(float)));
@@ -103,19 +132,39 @@ float *mean_shift(float *matrix, int M, int N) {
   // or CUBLAS_OP_T?
   cublasCheckError(cublasSgemv(handle, CUBLAS_OP_N, N, M, &alpha, d_matrix, N,
                                d_x, 1, &beta, d_y, 1));
-  cudaMemcpy(x, d_x, sizeof(float) * M, cudaMemcpyDeviceToHost);
-  cudaMemcpy(y, d_y, sizeof(float) * N, cudaMemcpyDeviceToHost);
-  printVector(M, x, "X");
-  printVector(N, y, "Y");
-  // printMatrix(M, N, )
+  const int threadsPerBlock = 512;
+  int blocks = N / threadsPerBlock;
+  if (N % threadsPerBlock != 0) {
+    blocks++;
+  }
+  int LBLK = 32;
+  dim3 tpb(LBLK, LBLK);
+  int div = N / LBLK;
+  int div2 = M / LBLK;
+  if (N % LBLK != 0) {
+    div++;
+  }
+  if (M % LBLK != 0) {
+    div2++;
+  }
+  dim3 bs(div2, div);
+  get_average_from_total<<<blocks, threadsPerBlock>>>(d_y, N, M);
+  cudaCheckError(cudaDeviceSynchronize());
+  subtract<<<bs, tpb>>>(d_matrix, d_y, M, N);
+  cudaCheckError(cudaDeviceSynchronize());
+  if (d_y)
+    cudaCheckError(cudaFree(d_y));
+  if (d_x)
+    cudaCheckError(cudaFree(d_x));
+  if (x)
+    free(x);
+  if (y)
+    free(y);
+  // print_cpu_matrix(M, N, matrix, "matrix");
   return d_matrix;
 }
 
 void perform_pca(float *matrix, int M, int N) {
-  mean_shift(matrix, M, N);
-  // matrix[0] = 4.0;
-  // matrix[1] = 0.0;
-  // matrix[2] = 3.0;
-  // matrix[3] = -5.0;
-  // svd_t svd = perform_svd(matrix, 2, 2);
+  float *d_matrix = mean_shift(matrix, M, N);
+  svd_t svd = perform_svd(d_matrix, M, N);
 }
