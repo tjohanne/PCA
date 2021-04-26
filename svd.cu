@@ -58,6 +58,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
   cudaStream_t stream = NULL;
   gesvdjInfo_t gesvdj_params = NULL;
 
+  printf("in perform_svd\n");
   cusolverStatus_t status = CUSOLVER_STATUS_SUCCESS;
   cudaError_t cudaStat1 = cudaSuccess;
   cudaError_t cudaStat2 = cudaSuccess;
@@ -76,6 +77,8 @@ svd_t perform_svd(float *d_A, int m, int n) {
   float *U = new float[ldu * m];
   float *V = new float[ldv * n];
   float *S = new float[minmn * minmn];
+  printf("SVD 1\n");
+
   // float U[ldu*m]; /* m-by-m unitary matrix, left singular vectors  */
   // float V[ldv*n]; /* n-by-n unitary matrix, right singular vectors */
   // float S[minmn];     /* numerical singular value */
@@ -97,6 +100,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
   const cusolverEigMode_t jobz =
       CUSOLVER_EIG_MODE_VECTOR; // compute eigenvectors.
   const int econ = 0;           /* econ = 1 for economy size */
+  printf("SVD 2\n");
 
   /* numerical results of gesvdj  */
   double residual = 0;
@@ -199,14 +203,14 @@ svd_t perform_svd(float *d_A, int m, int n) {
   assert(CUSOLVER_STATUS_SUCCESS == status);
   assert(cudaSuccess == cudaStat1);
 
-  const int threadsPerBlock = 64;
+  const int threadsPerBlock = 512;
   int blocks = minmn / threadsPerBlock;
   if (minmn % threadsPerBlock != 0) {
     blocks++;
   }
-
+  printf("BLOCKS %d \n", blocks);
   //  transform S from a vector to a diagonal matrix
-  vec_to_diag<<<1, threadsPerBlock>>>(d_S, d_Smat, minmn);
+  vec_to_diag<<<blocks, threadsPerBlock>>>(d_S, d_Smat, minmn);
 
   cudaStat1 =
       cudaMemcpy(U, d_U, sizeof(float) * ldu * m, cudaMemcpyDeviceToHost);
@@ -231,21 +235,21 @@ svd_t perform_svd(float *d_A, int m, int n) {
     printf("WARNING: info = %d : gesvdj does not converge \n", info);
   }
 
-  printf("S = singular values (matlab base-1)\n");
-  printMatrix(minmn, 1, S, minmn, "S");
-  printf("=====\n");
+  // printf("S = singular values (matlab base-1)\n");
+  // printMatrix(minmn, 1, S, minmn, "S");
+  // printf("=====\n");
 
-  printf("U = left singular vectors (matlab base-1)\n");
-  printMatrix(m, m, U, ldu, "U");
-  printf("=====\n");
+  // printf("U = left singular vectors (matlab base-1)\n");
+  // printMatrix(m, m, U, ldu, "U");
+  // printf("=====\n");
 
-  printf("V = right singular vectors (matlab base-1)\n");
-  printMatrix(n, n, V, ldv, "V");
-  printf("=====\n");
+  // printf("V = right singular vectors (matlab base-1)\n");
+  // printMatrix(n, n, V, ldv, "V");
+  // printf("=====\n");
 
-  printf("S = matrix (matlab base-1)\n");
-  printMatrix(minmn, minmn, S, minmn, "S MATRIX");
-  printf("=====\n");
+  // printf("S = matrix (matlab base-1)\n");
+  // printMatrix(minmn, minmn, S, minmn, "S MATRIX");
+  // printf("=====\n");
 
   /* step 6: measure error of singular value */
   float ds_sup = 0;

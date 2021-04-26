@@ -126,8 +126,8 @@ float *transform(int nsamples, int nfeatures, int ncomponents, svd_t svd) {
              cudaMemcpyDeviceToHost);
   if (d_out_mat)
     cudaFree(d_out_mat);
-  printMatrix(nsamples, nfeatures, out_mat, nsamples, "transformed matrix");
-  print_cpu_matrix(nsamples, nfeatures, out_mat, "transformed matrix");
+  // printMatrix(nsamples, nfeatures, out_mat, nsamples, "transformed matrix");
+  // print_cpu_matrix(nsamples, nfeatures, out_mat, "transformed matrix");
   return out_mat;
 }
 
@@ -189,12 +189,12 @@ float *mean_shift(float *matrix, int M, int N) {
 }
 
 void perform_pca(float *matrix, int M, int N, int ncomponents) {
-  // float* U;
-  // float* S;
-  // float* V;
+
   float *d_matrix = mean_shift(matrix, M, N);
+
+  printf("mean shift complete \n");
   svd_t svd = perform_svd(d_matrix, M, N);
+  printf("svd complete \n");
   // U * S with gemm
-  // float *transform(int nsamples, int nfeatures, int ncomponents, svd_t svd)
   float *out = transform(M, N, ncomponents, svd);
 }
