@@ -108,7 +108,6 @@ float *transform(int nsamples, int nfeatures, int ncomponents, svd_t svd) {
   cublasOperation_t transa = CUBLAS_OP_N; // no transpose
   cublasOperation_t transb = CUBLAS_OP_N; // no transpose
   float *out_mat = (float *)malloc(sizeof(float) * nsamples * nfeatures);
-
   for (int i = 0; i < nsamples * nfeatures; i++) {
     out_mat[i] = 1.0f;
   }

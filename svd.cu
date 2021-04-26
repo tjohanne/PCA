@@ -45,6 +45,14 @@ void printVector(int m, const float *A, const char *name) {
   }
 }
 
+__global__ void vec_to_diag(float *vec, float *diag_mat, int vec_length) {
+  int diag_index = blockIdx.x * blockDim.x + threadIdx.x;
+  if (diag_index < vec_length) {
+    diag_mat[vec_length * diag_index + diag_index] = vec[diag_index];
+  }
+  __syncthreads();
+}
+
 svd_t perform_svd(float *d_A, int m, int n) {
   cusolverDnHandle_t cusolverH = NULL;
   cudaStream_t stream = NULL;
@@ -67,7 +75,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
   //   float A[lda * n] = {4.0, 0.0, 3.0, -5.0};
   float *U = new float[ldu * m];
   float *V = new float[ldv * n];
-  float *S = new float[minmn];
+  float *S = new float[minmn * minmn];
   // float U[ldu*m]; /* m-by-m unitary matrix, left singular vectors  */
   // float V[ldv*n]; /* n-by-n unitary matrix, right singular vectors */
   // float S[minmn];     /* numerical singular value */
@@ -75,9 +83,10 @@ svd_t perform_svd(float *d_A, int m, int n) {
   //  TODO s_exact is for testing, remove
   float S_exact[2 * 3] = {6.3, 3.16};
   //   float *d_A = NULL;    /* device copy of A */
-  float *d_S = NULL;    /* singular values */
-  float *d_U = NULL;    /* left singular vectors */
-  float *d_V = NULL;    /* right singular vectors */
+  float *d_S = NULL; /* singular values */
+  float *d_U = NULL; /* left singular vectors */
+  float *d_V = NULL; /* right singular vectors */
+  float *d_Smat = NULL;
   int *d_info = NULL;   /* error info */
   int lwork = 0;        /* size of workspace */
   float *d_work = NULL; /* devie workspace for gesvdj */
@@ -125,15 +134,17 @@ svd_t perform_svd(float *d_A, int m, int n) {
   assert(CUSOLVER_STATUS_SUCCESS == status);
 
   /* step 3: copy A and B to device */
-  //   cudaStat1 = cudaMalloc((void **)&d_A, sizeof(float) * lda * n);
+  // cudaStat1 = cudaMalloc((void **)&d_A, sizeof(float) * lda * n);
   cudaStat2 = cudaMalloc((void **)&d_S, sizeof(float) * minmn);
   cudaStat3 = cudaMalloc((void **)&d_U, sizeof(float) * ldu * m);
   cudaStat4 = cudaMalloc((void **)&d_V, sizeof(float) * ldv * n);
   cudaStat5 = cudaMalloc((void **)&d_info, sizeof(int));
+  cudaStat5 = cudaMalloc((void **)&d_Smat, sizeof(float) * minmn * minmn);
   assert(cudaSuccess == cudaStat1);
   assert(cudaSuccess == cudaStat2);
   assert(cudaSuccess == cudaStat3);
   assert(cudaSuccess == cudaStat4);
+  assert(cudaSuccess == cudaStat5);
   assert(cudaSuccess == cudaStat5);
 
   //   cudaStat1 =
@@ -188,11 +199,21 @@ svd_t perform_svd(float *d_A, int m, int n) {
   assert(CUSOLVER_STATUS_SUCCESS == status);
   assert(cudaSuccess == cudaStat1);
 
+  const int threadsPerBlock = 64;
+  int blocks = minmn / threadsPerBlock;
+  if (minmn % threadsPerBlock != 0) {
+    blocks++;
+  }
+
+  //  transform S from a vector to a diagonal matrix
+  vec_to_diag<<<1, threadsPerBlock>>>(d_S, d_Smat, minmn);
+
   cudaStat1 =
       cudaMemcpy(U, d_U, sizeof(float) * ldu * m, cudaMemcpyDeviceToHost);
   cudaStat2 =
       cudaMemcpy(V, d_V, sizeof(float) * ldv * n, cudaMemcpyDeviceToHost);
-  cudaStat3 = cudaMemcpy(S, d_S, sizeof(float) * minmn, cudaMemcpyDeviceToHost);
+  cudaStat3 = cudaMemcpy(S, d_Smat, sizeof(float) * minmn * minmn,
+                         cudaMemcpyDeviceToHost);
   cudaStat4 = cudaMemcpy(&info, d_info, sizeof(int), cudaMemcpyDeviceToHost);
   cudaStat5 = cudaDeviceSynchronize();
   assert(cudaSuccess == cudaStat1);
@@ -222,6 +243,10 @@ svd_t perform_svd(float *d_A, int m, int n) {
   printMatrix(n, n, V, ldv, "V");
   printf("=====\n");
 
+  printf("S = matrix (matlab base-1)\n");
+  printMatrix(minmn, minmn, S, minmn, "S MATRIX");
+  printf("=====\n");
+
   /* step 6: measure error of singular value */
   float ds_sup = 0;
   for (int j = 0; j < minmn; j++) {
@@ -243,8 +268,8 @@ svd_t perform_svd(float *d_A, int m, int n) {
   /*  free resources  */
   if (d_A)
     cudaFree(d_A);
-  //   if (d_S)
-  //     cudaFree(d_S);
+  if (d_S)
+    cudaFree(d_S);
   //   if (d_U)
   //     cudaFree(d_U);
   //   if (d_V)
@@ -266,7 +291,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
   if (gesvdj_params)
     cusolverDnDestroyGesvdjInfo(gesvdj_params);
   SVD svd;
-  svd.S = d_S;
+  svd.S = d_Smat;
   svd.V = d_V;
   svd.U = d_U;
   // cudaDeviceReset();
