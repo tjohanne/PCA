@@ -9,14 +9,13 @@ typedef struct SVD {
 
 svd_t perform_svd(float *A, int m, int n);
 
-int main() {
-  // std::string filename = "iris.csv";
-  // std::string filename = "mnist_784.csv";
-  std::string filename = "face_data.csv";
-  // csvInfo csv = read_csv("./files/");
-  // csvInfo csv = read_csv("./files/");
-  csvInfo csv = read_csv("./files/" + filename);
-  // print_csv(csv);
+int main(int argc, const char *argv[]) {
+
+  // std::string filename = argv[1];
+  // csvInfo csv = read_csv("./files/" + filename);
+  std::string filename = "test.csv";
+  csvInfo csv = read_csv("./files/" + filename, false);
+
   printf("Read CVS with M %d N %d \n", csv.rows, csv.cols);
 
   int ncomponents = 2;

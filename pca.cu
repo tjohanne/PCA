@@ -102,6 +102,28 @@ void print_cpu_matrix(int m, int n, const float *A, const char *name) {
   }
 }
 
+void printColMatrix(int m, int n, const float *A, int lda, const char *name) {
+  for (int row = 0; row < m; row++) {
+    for (int col = 0; col < n; col++) {
+      float Areg = A[row + col * lda];
+      printf("%s(%d,%d) = %.3f\n", name, row + 1, col + 1, Areg);
+    }
+  }
+}
+
+void print_host_matrix(int m, int n, const float *A, const char *name) {
+  float *tempmatrix;
+  cudaMalloc((void **)&tempmatrix, sizeof(float) * m * n);
+  cudaMemcpy(tempmatrix, A, sizeof(float) * m * n, cudaMemcpyHostToDevice);
+  for (int row = 0; row < m; row++) {
+    for (int col = 0; col < n; col++) {
+      float Areg = tempmatrix[col + row * n];
+      printf("(%d,%d)%.3f,", row, col, Areg);
+    }
+    printf("\n");
+  }
+}
+
 float *transform(int nsamples, int nfeatures, int ncomponents, svd_t svd) {
   cublasHandle_t handle;
   float alpha = 1.0;
@@ -110,7 +132,7 @@ float *transform(int nsamples, int nfeatures, int ncomponents, svd_t svd) {
   cublasOperation_t transb = CUBLAS_OP_N; // no transpose
   float *out_mat = (float *)malloc(sizeof(float) * nsamples * nfeatures);
   for (int i = 0; i < nsamples * nfeatures; i++) {
-    out_mat[i] = 1.0f;
+    out_mat[i] = 0.0f;
   }
   float *d_out_mat = NULL;
 
@@ -137,6 +159,8 @@ float *mean_shift(float *matrix, int M, int N) {
   float *x = new float[M];
   float *y = new float[N];
   float *d_matrix = NULL;
+  float *print_matrix = NULL;
+  float *clonem = NULL;
   float *d_x = NULL;
   float *d_y = NULL;
   float alpha = 1.0;
@@ -149,12 +173,17 @@ float *mean_shift(float *matrix, int M, int N) {
   }
   // will need to call cublasDestroy() at some point
   cublasCheckError(cublasCreate(&handle));
+  print_matrix = (float *)malloc(sizeof(float) * M * N);
   cudaCheckError(cudaMalloc((void **)&d_matrix, M * N * sizeof(float)));
+  cudaCheckError(cudaMalloc((void **)&clonem, M * N * sizeof(float)));
   cudaCheckError(cudaMalloc((void **)&d_x, M * sizeof(float)));
   cudaCheckError(cudaMalloc((void **)&d_y, N * sizeof(float)));
   cudaCheckError(cudaMemcpy(d_x, x, M * sizeof(float), cudaMemcpyHostToDevice));
   cudaCheckError(cudaMemcpy(d_matrix, matrix, M * N * sizeof(float),
                             cudaMemcpyHostToDevice));
+  cudaCheckError(cudaMemcpy(print_matrix, d_matrix, M * N * sizeof(float),
+                            cudaMemcpyDeviceToHost));
+  print_cpu_matrix(M, N, print_matrix, "mean shifted");
   // or CUBLAS_OP_T?
   cublasCheckError(cublasSgemv(handle, CUBLAS_OP_N, N, M, &alpha, d_matrix, N,
                                d_x, 1, &beta, d_y, 1));
@@ -178,23 +207,32 @@ float *mean_shift(float *matrix, int M, int N) {
   cudaCheckError(cudaDeviceSynchronize());
   subtract<<<bs, tpb>>>(d_matrix, d_y, M, N);
   cudaCheckError(cudaDeviceSynchronize());
+
+  cublasCheckError(cublasSgeam(handle, CUBLAS_OP_T, CUBLAS_OP_N, M, N, &alpha,
+                               d_matrix, N, &beta, d_matrix, M, clonem, M));
   if (d_y)
     cudaCheckError(cudaFree(d_y));
   if (d_x)
     cudaCheckError(cudaFree(d_x));
+  if (d_matrix)
+    cudaCheckError(cudaFree(d_matrix));
   if (x)
     free(x);
   if (y)
     free(y);
-  return d_matrix;
+  cudaCheckError(cudaMemcpy(print_matrix, clonem, M * N * sizeof(float),
+                            cudaMemcpyDeviceToHost));
+  printColMatrix(M, N, print_matrix, M, "mean shifted");
+  if(print_matrix)
+    free(print_matrix);
+  return clonem;
 }
 
 float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents) {
-
+  // print_cpu_matrix(M, N, matrix, "csv matrix");
   float *d_matrix = mean_shift(matrix, M, N);
-
   printf("mean shift complete \n");
-  svd_t svd = perform_svd(d_matrix, M, N);
+  svd_t svd = perform_svd(d_matrix, 5, 3);
   printf("svd complete \n");
   // U * S with gemm
   float_matrix_t ret;

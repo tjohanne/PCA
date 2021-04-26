@@ -18,7 +18,8 @@ public:
  * Based on this:
  * https://www.gormanalysis.com/blog/reading-and-writing-csv-files-with-cpp/
  */
-csvInfo read_csv(std::string filename, bool ignore_last_col = true) {
+csvInfo read_csv(std::string filename, bool ignore_last_col = true,
+                 bool col_major = true) {
   // Reads a CSV file into a vector of <string, vector<int>> pairs where
   // each pair represents <column name, column values>
 
@@ -74,7 +75,11 @@ csvInfo read_csv(std::string filename, bool ignore_last_col = true) {
     // Extract each float
     while (ss >> val) {
       if (curr_col < num_cols) {
-        matrix[index] = val;
+        if (col_major) {
+          matrix[index] = val;
+        } else {
+          matrix[index] = val;
+        }
       }
 
       // If the next token is a comma, ignore it and move on

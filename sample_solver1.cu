@@ -26,188 +26,175 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #include "cusolver_utils.h"
 
 #include "cuda_runtime_api.h"
 #include "cusolverDn.h"
 
-#include <string>
+#include <cassert>
 #include <cstring>
 #include <iostream>
-#include <cassert>
+#include <string>
 
-int main(int argc, const char* argv[])
-{
-    bool verbose = false;
+int main(int argc, const char *argv[]) {
+  bool verbose = false;
 
-    // Matrix size
-    const int N = 1024;
-    
-    // Numer of right hand sides
-    const int nrhs = 1;
+  // Matrix size
+  const int N = 1024;
 
-    // Use double precision matrix and half precision factorization
-    typedef double T;
-    const cusolverPrecType_t matrix_precision = CUSOLVER_R_64F;
-    // make sure that you specify matrix precision that matches to the data type
-    assert(traits<T>::cusolver_precision_type == matrix_precision);
-    const cusolverPrecType_t compute_lower_precision = CUSOLVER_R_16F;
+  // Numer of right hand sides
+  const int nrhs = 1;
 
-    // Use GMRES refinement solver
-    const cusolverIRSRefinement_t refinement_solver = CUSOLVER_IRS_REFINE_GMRES;
+  // Use double precision matrix and half precision factorization
+  typedef double T;
+  const cusolverPrecType_t matrix_precision = CUSOLVER_R_64F;
+  // make sure that you specify matrix precision that matches to the data type
+  assert(traits<T>::cusolver_precision_type == matrix_precision);
+  const cusolverPrecType_t compute_lower_precision = CUSOLVER_R_16F;
 
-    T* hA;
-    cusolver_int_t lda;
-    T* hB;
-    cusolver_int_t ldb;
-    T* hX;
-    cusolver_int_t ldx;
+  // Use GMRES refinement solver
+  const cusolverIRSRefinement_t refinement_solver = CUSOLVER_IRS_REFINE_GMRES;
 
-    cudaStream_t stream;
-    cudaEvent_t event_start, event_end;
-    cusolverDnHandle_t handle;
-    cusolverDnIRSParams_t gesv_params;
-    cusolverDnIRSInfos_t gesv_info;
+  T *hA;
+  cusolver_int_t lda;
+  T *hB;
+  cusolver_int_t ldb;
+  T *hX;
+  cusolver_int_t ldx;
 
-    std::cout << "Generating matrix A on host..." << std::endl;
-    generate_random_matrix<T>(N, N, &hA, &lda);
-    std::cout << "make A diagonal dominant..." << std::endl;
-    make_diag_dominant_matrix<T>(N, N, hA, lda);
-    std::cout << "Generating matrix B on host..." << std::endl;
-    generate_random_matrix<T>(nrhs, N, &hB, &ldb);
-    std::cout << "Generating matrix X on host..." << std::endl;
-    generate_random_matrix<T>(nrhs, N, &hX, &ldx);
+  cudaStream_t stream;
+  cudaEvent_t event_start, event_end;
+  cusolverDnHandle_t handle;
+  cusolverDnIRSParams_t gesv_params;
+  cusolverDnIRSInfos_t gesv_info;
 
-    if (verbose)
-    {
-        std::cout << "A: \n";
-        print_matrix(N, N, hA, lda);
-        std::cout << "B: \n";
-        print_matrix(nrhs, N, hB, ldb);
-        std::cout << "X: \n";
-        print_matrix(nrhs, N, hX, ldx);
-    }
+  std::cout << "Generating matrix A on host..." << std::endl;
+  generate_random_matrix<T>(N, N, &hA, &lda);
+  std::cout << "make A diagonal dominant..." << std::endl;
+  make_diag_dominant_matrix<T>(N, N, hA, lda);
+  std::cout << "Generating matrix B on host..." << std::endl;
+  generate_random_matrix<T>(nrhs, N, &hB, &ldb);
+  std::cout << "Generating matrix X on host..." << std::endl;
+  generate_random_matrix<T>(nrhs, N, &hX, &ldx);
 
-    std::cout << "Initializing CUDA..." << std::endl;
-    CUDA_CHECK(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
-    CUDA_CHECK(cudaEventCreate(&event_start));
-    CUDA_CHECK(cudaEventCreate(&event_end));
-    CUSOLVER_CHECK(cusolverDnCreate(&handle));
-    CUSOLVER_CHECK(cusolverDnSetStream(handle, stream));
+  if (verbose) {
+    std::cout << "A: \n";
+    print_matrix(N, N, hA, lda);
+    std::cout << "B: \n";
+    print_matrix(nrhs, N, hB, ldb);
+    std::cout << "X: \n";
+    print_matrix(nrhs, N, hX, ldx);
+  }
 
-    std::cout << "Setting up gesv() parameters..." << std::endl;
-    // create solver parameters
-    CUSOLVER_CHECK(cusolverDnIRSParamsCreate(&gesv_params));
-    // set matrix precision and factorization precision
-    CUSOLVER_CHECK(cusolverDnIRSParamsSetSolverPrecisions(gesv_params, 
-        matrix_precision,
-        compute_lower_precision));
-    // set refinement solver 
-    CUSOLVER_CHECK(cusolverDnIRSParamsSetRefinementSolver(gesv_params, refinement_solver));
-    // create solve info structure
-    CUSOLVER_CHECK(cusolverDnIRSInfosCreate(&gesv_info));
+  std::cout << "Initializing CUDA..." << std::endl;
+  CUDA_CHECK(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+  CUDA_CHECK(cudaEventCreate(&event_start));
+  CUDA_CHECK(cudaEventCreate(&event_end));
+  CUSOLVER_CHECK(cusolverDnCreate(&handle));
+  CUSOLVER_CHECK(cusolverDnSetStream(handle, stream));
 
-    // matrix on device
-    T* dA;
-    cusolver_int_t ldda = ALIGN_TO(N*sizeof(T), device_alignment) / sizeof(T);
-    // right hand side on device
-    T* dB;
-    cusolver_int_t lddb = ALIGN_TO(N*sizeof(T), device_alignment) / sizeof(T);
-    // solution on device
-    T* dX;
-    cusolver_int_t lddx = ALIGN_TO(N*sizeof(T), device_alignment) / sizeof(T);
+  std::cout << "Setting up gesv() parameters..." << std::endl;
+  // create solver parameters
+  CUSOLVER_CHECK(cusolverDnIRSParamsCreate(&gesv_params));
+  // set matrix precision and factorization precision
+  CUSOLVER_CHECK(cusolverDnIRSParamsSetSolverPrecisions(
+      gesv_params, matrix_precision, compute_lower_precision));
+  // set refinement solver
+  CUSOLVER_CHECK(
+      cusolverDnIRSParamsSetRefinementSolver(gesv_params, refinement_solver));
+  // create solve info structure
+  CUSOLVER_CHECK(cusolverDnIRSInfosCreate(&gesv_info));
 
-    // pivot sequence on device
-    cusolver_int_t* dipiv;
-    // info indicator on device
-    cusolver_int_t* dinfo;
-    // work buffer
-    void* dwork;
-    // size of work buffer
-    size_t dwork_size;
-    // number of refinement iterations returned by solver
-    cusolver_int_t iter;
+  // matrix on device
+  T *dA;
+  cusolver_int_t ldda = ALIGN_TO(N * sizeof(T), device_alignment) / sizeof(T);
+  // right hand side on device
+  T *dB;
+  cusolver_int_t lddb = ALIGN_TO(N * sizeof(T), device_alignment) / sizeof(T);
+  // solution on device
+  T *dX;
+  cusolver_int_t lddx = ALIGN_TO(N * sizeof(T), device_alignment) / sizeof(T);
 
-    std::cout << "Allocating memory on device..." << std::endl;
-    // allocate data
-    CUDA_CHECK(cudaMalloc( &dA, ldda*N*sizeof(T)));
-    CUDA_CHECK(cudaMalloc( &dB, lddb*nrhs*sizeof(T) ));
-    CUDA_CHECK(cudaMalloc( &dX, lddx*nrhs*sizeof(T) ));
-    CUDA_CHECK(cudaMalloc( &dipiv, N*sizeof(cusolver_int_t) ));
-    CUDA_CHECK(cudaMalloc( &dinfo, sizeof(cusolver_int_t) ));
+  // pivot sequence on device
+  cusolver_int_t *dipiv;
+  // info indicator on device
+  cusolver_int_t *dinfo;
+  // work buffer
+  void *dwork;
+  // size of work buffer
+  size_t dwork_size;
+  // number of refinement iterations returned by solver
+  cusolver_int_t iter;
 
-    // copy input data
-    CUDA_CHECK(cudaMemcpy2D( dA, ldda*sizeof(T), hA, lda*sizeof(T), N*sizeof(T)   , N, cudaMemcpyDefault ));
-    CUDA_CHECK(cudaMemcpy2D( dB, lddb*sizeof(T), hB, ldb*sizeof(T), N*sizeof(T), nrhs, cudaMemcpyDefault ));
+  std::cout << "Allocating memory on device..." << std::endl;
+  // allocate data
+  CUDA_CHECK(cudaMalloc(&dA, ldda * N * sizeof(T)));
+  CUDA_CHECK(cudaMalloc(&dB, lddb * nrhs * sizeof(T)));
+  CUDA_CHECK(cudaMalloc(&dX, lddx * nrhs * sizeof(T)));
+  CUDA_CHECK(cudaMalloc(&dipiv, N * sizeof(cusolver_int_t)));
+  CUDA_CHECK(cudaMalloc(&dinfo, sizeof(cusolver_int_t)));
 
-    // get required device work buffer size
-    CUSOLVER_CHECK(cusolverDnIRSXgesv_bufferSize(handle, 
-        gesv_params, 
-        N, 
-        nrhs, 
-        &dwork_size));
-    std::cout << "Workspace is " << dwork_size << " bytes" << std::endl;
-    CUDA_CHECK(cudaMalloc( &dwork, dwork_size ));
+  // copy input data
+  CUDA_CHECK(cudaMemcpy2D(dA, ldda * sizeof(T), hA, lda * sizeof(T),
+                          N * sizeof(T), N, cudaMemcpyDefault));
+  CUDA_CHECK(cudaMemcpy2D(dB, lddb * sizeof(T), hB, ldb * sizeof(T),
+                          N * sizeof(T), nrhs, cudaMemcpyDefault));
 
-    std::cout << "Solving matrix on device..." << std::endl;
-    CUDA_CHECK(cudaEventRecord(event_start, stream));
+  // get required device work buffer size
+  CUSOLVER_CHECK(
+      cusolverDnIRSXgesv_bufferSize(handle, gesv_params, N, nrhs, &dwork_size));
+  std::cout << "Workspace is " << dwork_size << " bytes" << std::endl;
+  CUDA_CHECK(cudaMalloc(&dwork, dwork_size));
 
-    cusolverStatus_t gesv_status = cusolverDnIRSXgesv(handle, gesv_params, gesv_info,
-        N,
-        nrhs,
-        dA,
-        ldda,
-        dB, 
-        lddb,
-        dX,
-        lddx,
-        dwork,
-        dwork_size,
-        &iter,
-        dinfo);
-    CUSOLVER_CHECK(gesv_status);
+  std::cout << "Solving matrix on device..." << std::endl;
+  CUDA_CHECK(cudaEventRecord(event_start, stream));
 
-    CUDA_CHECK(cudaEventRecord(event_end, stream));
-    // check solve status
-    int info = 0;
-    CUDA_CHECK(cudaMemcpyAsync(&info, dinfo, sizeof(cusolver_int_t), cudaMemcpyDeviceToHost, stream));
-    CUDA_CHECK(cudaStreamSynchronize(stream));
+  cusolverStatus_t gesv_status =
+      cusolverDnIRSXgesv(handle, gesv_params, gesv_info, N, nrhs, dA, ldda, dB,
+                         lddb, dX, lddx, dwork, dwork_size, &iter, dinfo);
+  CUSOLVER_CHECK(gesv_status);
 
-    std::cout << "Solve info is: " << info << ", iter is: " << iter << std::endl;
+  CUDA_CHECK(cudaEventRecord(event_end, stream));
+  // check solve status
+  int info = 0;
+  CUDA_CHECK(cudaMemcpyAsync(&info, dinfo, sizeof(cusolver_int_t),
+                             cudaMemcpyDeviceToHost, stream));
+  CUDA_CHECK(cudaStreamSynchronize(stream));
 
-    CUDA_CHECK(cudaMemcpy2D( hX, ldx*sizeof(T), dX, lddx*sizeof(T), N*sizeof(T), nrhs, cudaMemcpyDefault ));
-    if (verbose)
-    {
-        std::cout << "X:\n";
-        print_matrix(nrhs, N, hX, ldx);
-    }
+  std::cout << "Solve info is: " << info << ", iter is: " << iter << std::endl;
 
-    CUDA_CHECK(cudaGetLastError());
+  CUDA_CHECK(cudaMemcpy2D(hX, ldx * sizeof(T), dX, lddx * sizeof(T),
+                          N * sizeof(T), nrhs, cudaMemcpyDefault));
+  if (verbose) {
+    std::cout << "X:\n";
+    print_matrix(nrhs, N, hX, ldx);
+  }
 
-    float solve_time = 0.f;
-    CUDA_CHECK(cudaEventElapsedTime(&solve_time, event_start, event_end));
-    std::cout << "Solved matrix " << N << "x" << N << " with " << nrhs <<
-        " right hand sides in " << solve_time << "ms" << std::endl;
+  CUDA_CHECK(cudaGetLastError());
 
-    std::cout << "Releasing resources..." << std::endl;
-    CUDA_CHECK(cudaFree( dwork ));
-    CUDA_CHECK(cudaFree( dinfo ));
-    CUDA_CHECK(cudaFree( dipiv ));
-    CUDA_CHECK(cudaFree( dX ));
-    CUDA_CHECK(cudaFree( dB ));
-    CUDA_CHECK(cudaFree( dA ));
+  float solve_time = 0.f;
+  CUDA_CHECK(cudaEventElapsedTime(&solve_time, event_start, event_end));
+  std::cout << "Solved matrix " << N << "x" << N << " with " << nrhs
+            << " right hand sides in " << solve_time << "ms" << std::endl;
 
-    free(hA);
-    free(hB);
-    free(hX);
+  std::cout << "Releasing resources..." << std::endl;
+  CUDA_CHECK(cudaFree(dwork));
+  CUDA_CHECK(cudaFree(dinfo));
+  CUDA_CHECK(cudaFree(dipiv));
+  CUDA_CHECK(cudaFree(dX));
+  CUDA_CHECK(cudaFree(dB));
+  CUDA_CHECK(cudaFree(dA));
 
-    CUSOLVER_CHECK(cusolverDnDestroy(handle));
-    CUDA_CHECK(cudaEventDestroy(event_start));
-    CUDA_CHECK(cudaEventDestroy(event_end));
-    CUDA_CHECK(cudaStreamDestroy(stream));
+  free(hA);
+  free(hB);
+  free(hX);
 
-    std::cout << "Done!" << std::endl;
+  CUSOLVER_CHECK(cusolverDnDestroy(handle));
+  CUDA_CHECK(cudaEventDestroy(event_start));
+  CUDA_CHECK(cudaEventDestroy(event_end));
+  CUDA_CHECK(cudaStreamDestroy(stream));
 
-    return 0;
+  std::cout << "Done!" << std::endl;
+
+  return 0;
 }
