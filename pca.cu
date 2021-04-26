@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "cublas_v2.h"
+#include "pca.cuh"
 #include "svd.cuh"
 #include <cuda_runtime.h>
 #ifndef min
@@ -188,7 +189,7 @@ float *mean_shift(float *matrix, int M, int N) {
   return d_matrix;
 }
 
-void perform_pca(float *matrix, int M, int N, int ncomponents) {
+float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents) {
 
   float *d_matrix = mean_shift(matrix, M, N);
 
@@ -196,5 +197,9 @@ void perform_pca(float *matrix, int M, int N, int ncomponents) {
   svd_t svd = perform_svd(d_matrix, M, N);
   printf("svd complete \n");
   // U * S with gemm
-  float *out = transform(M, N, ncomponents, svd);
+  float_matrix_t ret;
+  ret.matrix = transform(M, N, ncomponents, svd);
+  ret.rows = M;
+  ret.cols = N;
+  return ret;
 }

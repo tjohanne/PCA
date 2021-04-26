@@ -6,16 +6,22 @@ typedef struct SVD {
   float *S;
   float *V;
 } svd_t;
+
 svd_t perform_svd(float *A, int m, int n);
 
 int main() {
-  // csvInfo csv = read_csv("./files/iris.csv");
-  csvInfo csv = read_csv("./files/mnist_784.csv");
-  // csvInfo csv = read_csv("./files/face_data.csv");
+  // std::string filename = "iris.csv";
+  // std::string filename = "mnist_784.csv";
+  std::string filename = "face_data.csv";
+  // csvInfo csv = read_csv("./files/");
+  // csvInfo csv = read_csv("./files/");
+  csvInfo csv = read_csv("./files/" + filename);
   // print_csv(csv);
+  printf("Read CVS with M %d N %d \n", csv.rows, csv.cols);
 
   int ncomponents = 2;
   printf("calling pca \n");
-  perform_pca(csv.matrix, csv.rows, csv.cols, ncomponents);
+  float_matrix_t ret = perform_pca(csv.matrix, csv.rows, csv.cols, ncomponents);
+  write_matrix_csv("./output/" + filename, ret.matrix, ret.rows, ret.cols);
   return 1;
 }

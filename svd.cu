@@ -85,7 +85,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
   const int econ = 1;           /* econ = 1 for economy size */
   double residual = 0;
   int executed_sweeps = 0;
-  
+
   /* create cusolver handle */
   status = cusolverDnCreate(&cusolverH);
   assert(CUSOLVER_STATUS_SUCCESS == status);
@@ -112,40 +112,20 @@ svd_t perform_svd(float *d_A, int m, int n) {
   assert(cudaSuccess == cudaStat5);
   assert(cudaSuccess == cudaStat5);
 
-  status = cusolverDnSgesvdj_bufferSize(
-      cusolverH,
-      jobz, 
-      econ,
-      m,    //  nrows
-      n,    //  ncols
-      d_A,
-      lda,
-      d_S,
-      d_U,
-      ldu,
-      d_V,
-      ldv,
-      &lwork, gesvdj_params);
+  status = cusolverDnSgesvdj_bufferSize(cusolverH, jobz, econ,
+                                        m, //  nrows
+                                        n, //  ncols
+                                        d_A, lda, d_S, d_U, ldu, d_V, ldv,
+                                        &lwork, gesvdj_params);
   assert(CUSOLVER_STATUS_SUCCESS == status);
 
   cudaStat1 = cudaMalloc((void **)&d_work, sizeof(float) * lwork);
   assert(cudaSuccess == cudaStat1);
 
   /* compute SVD */
-  status = cusolverDnSgesvdj(
-      cusolverH,
-      jobz, 
-      econ, 
-      m,    
-      n,    
-      d_A,  
-      lda,  
-      d_S,  
-      d_U,  
-      ldu,  
-      d_V,  
-      ldv,  
-      d_work, lwork, d_info, gesvdj_params);
+  status =
+      cusolverDnSgesvdj(cusolverH, jobz, econ, m, n, d_A, lda, d_S, d_U, ldu,
+                        d_V, ldv, d_work, lwork, d_info, gesvdj_params);
   cudaStat1 = cudaDeviceSynchronize();
   assert(CUSOLVER_STATUS_SUCCESS == status);
   assert(cudaSuccess == cudaStat1);
@@ -212,8 +192,8 @@ svd_t perform_svd(float *d_A, int m, int n) {
     cudaFree(d_S);
   //   if (d_U)
   //     cudaFree(d_U);
-    if (d_V)
-      cudaFree(d_V);
+  if (d_V)
+    cudaFree(d_V);
   if (d_info)
     cudaFree(d_info);
   if (d_work)

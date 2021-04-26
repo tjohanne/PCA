@@ -18,7 +18,7 @@ public:
  * Based on this:
  * https://www.gormanalysis.com/blog/reading-and-writing-csv-files-with-cpp/
  */
-csvInfo read_csv(std::string filename) {
+csvInfo read_csv(std::string filename, bool ignore_last_col = true) {
   // Reads a CSV file into a vector of <string, vector<int>> pairs where
   // each pair represents <column name, column values>
 
@@ -54,9 +54,11 @@ csvInfo read_csv(std::string filename) {
   }
   while (std::getline(myFile, line))
     ++num_lines;
-  std::cout << "here" << std::endl;
-  std::cout << "col_names.size" << col_names.size() << std::endl;
-  std::cout << "num_lines" << num_lines << std::endl;
+  if (ignore_last_col) {
+    col_names.pop_back();
+  }
+  std::cout << "Features" << col_names.size() << std::endl;
+  std::cout << "Samples" << num_lines << std::endl;
   num_cols = col_names.size();
   myFile.clear();
   myFile.seekg(0);
@@ -64,13 +66,16 @@ csvInfo read_csv(std::string filename) {
   float *matrix = new float[num_cols * num_lines];
   // Read data, line by line
   int index = 0;
+  int curr_col = 0;
   while (std::getline(myFile, line)) {
     // Create a stringstream of the current line
     std::stringstream ss(line);
 
-    // Extract each integer
+    // Extract each float
     while (ss >> val) {
-      matrix[index] = val;
+      if (curr_col < num_cols) {
+        matrix[index] = val;
+      }
 
       // If the next token is a comma, ignore it and move on
       if (ss.peek() == ',')
@@ -78,7 +83,13 @@ csvInfo read_csv(std::string filename) {
 
       // Increment the column index
       index++;
+      curr_col++;
+      if (curr_col == num_cols) {
+        std::string temp;
+        ss >> temp;
+      }
     }
+    curr_col = 0;
   }
 
   // Close file
@@ -88,6 +99,34 @@ csvInfo read_csv(std::string filename) {
   csv.rows = num_lines;
   csv.column_names = col_names;
   return csv;
+}
+
+void write_matrix_csv(std::string filename, float *matrix, int rows, int cols,
+                      bool write_col_names = true) {
+  std::ofstream myFile(filename);
+
+  // Send column names to the stream
+  if (write_col_names) {
+    for (int j = 0; j < cols; j++) {
+      myFile << j;
+      if (j != cols - 1)
+        myFile << ","; // No comma at end of line
+    }
+    myFile << "\n";
+  }
+
+  // Send data to the stream
+  for (int i = 0; i < rows; i++) {
+    for (int j = 0; j < cols; ++j) {
+      myFile << matrix[i * cols + j];
+      if (j != cols - 1)
+        myFile << ","; // No comma at end of line
+    }
+    myFile << "\n";
+  }
+
+  // Close the file
+  myFile.close();
 }
 
 void print_csv(csvInfo csv) {
