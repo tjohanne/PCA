@@ -95,10 +95,41 @@ void print_cpu_matrix(int m, int n, const float *A, const char *name) {
   for (int row = 0; row < m; row++) {
     for (int col = 0; col < n; col++) {
       float Areg = A[col + row * n];
-      printf("%.3f,", Areg);
+      printf("(%d,%d)%.3f,", row, col, Areg);
     }
     printf("\n");
   }
+}
+
+float *transform(int nsamples, int nfeatures, int ncomponents, svd_t svd) {
+  cublasHandle_t handle;
+  float alpha = 1.0;
+  float beta = 0.0;
+  cublasOperation_t transa = CUBLAS_OP_N; // no transpose
+  cublasOperation_t transb = CUBLAS_OP_N; // no transpose
+  float *out_mat = (float *)malloc(sizeof(float) * nsamples * nfeatures);
+
+  for (int i = 0; i < nsamples * nfeatures; i++) {
+    out_mat[i] = 1.0f;
+  }
+  float *d_out_mat = NULL;
+
+  cudaMalloc((void **)&d_out_mat, sizeof(float) * nsamples * nfeatures);
+  cudaMemcpy(d_out_mat, out_mat, sizeof(float) * nsamples * nfeatures,
+             cudaMemcpyHostToDevice);
+  cublasCheckError(cublasCreate(&handle));
+  // assert(cudaSuccess == cudaStat1);
+  cublasCheckError(cublasSgemm(handle, transa, transb, nsamples, nfeatures,
+                               nfeatures, &alpha, svd.U, nsamples, svd.S,
+                               nfeatures, &beta, d_out_mat, nsamples));
+
+  cudaMemcpy(out_mat, d_out_mat, sizeof(float) * nsamples * nfeatures,
+             cudaMemcpyDeviceToHost);
+  if (d_out_mat)
+    cudaFree(d_out_mat);
+  printMatrix(nsamples, nfeatures, out_mat, nsamples, "transformed matrix");
+  print_cpu_matrix(nsamples, nfeatures, out_mat, "transformed matrix");
+  return out_mat;
 }
 
 float *mean_shift(float *matrix, int M, int N) {
@@ -110,10 +141,6 @@ float *mean_shift(float *matrix, int M, int N) {
   float *d_y = NULL;
   float alpha = 1.0;
   float beta = 0.0;
-  // float *alpha = new float[1];
-  // *alpha = 1.0f;
-  // float *beta = new float[1];
-  // *beta = 1.0f;
   for (int i = 0; i < M; i++) {
     x[i] = 1.0f;
   }
@@ -162,7 +189,13 @@ float *mean_shift(float *matrix, int M, int N) {
   return d_matrix;
 }
 
-void perform_pca(float *matrix, int M, int N) {
+void perform_pca(float *matrix, int M, int N, int ncomponents) {
+  // float* U;
+  // float* S;
+  // float* V;
   float *d_matrix = mean_shift(matrix, M, N);
   svd_t svd = perform_svd(d_matrix, M, N);
+  // U * S with gemm
+  // float *transform(int nsamples, int nfeatures, int ncomponents, svd_t svd)
+  float *out = transform(M, N, ncomponents, svd);
 }

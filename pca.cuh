@@ -1,1 +1,1 @@
-void perform_pca(float* matrix, int M, int N);
+void perform_pca(float* matrix, int M, int N, int n_components);
