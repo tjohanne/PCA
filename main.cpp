@@ -1,12 +1,16 @@
 #include "csv.cpp"
+#include "pca.cuh"
 
-void cuda_example();
-int cublas_example();
-int eigensolver_example();
+typedef struct SVD {
+  float *U;
+  float *S;
+  float *V;
+} svd_t;
+svd_t perform_svd(float *A, int m, int n);
+
 int main() {
   csvInfo csv = read_csv("./files/iris.csv");
+  perform_pca(csv.matrix, csv.rows, csv.cols);
   // print_csv(csv); // Can uncomment if you want to see output.
-  cublas_example();
-  eigensolver_example();
   return 1;
 }
