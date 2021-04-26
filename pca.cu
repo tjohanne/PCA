@@ -114,7 +114,6 @@ float *mean_shift(float *matrix, int M, int N) {
   // *alpha = 1.0f;
   // float *beta = new float[1];
   // *beta = 1.0f;
-  printMatrix(M, N, matrix, M, "matrix");
   for (int i = 0; i < M; i++) {
     x[i] = 1.0f;
   }
@@ -160,7 +159,6 @@ float *mean_shift(float *matrix, int M, int N) {
     free(x);
   if (y)
     free(y);
-  // print_cpu_matrix(M, N, matrix, "matrix");
   return d_matrix;
 }
 
