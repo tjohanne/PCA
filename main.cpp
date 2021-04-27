@@ -15,11 +15,13 @@ int main(int argc, const char *argv[]) {
   csvInfo csv = read_csv("./files/" + filename);
   printf("Read CVS with M %d N %d \n", csv.rows, csv.cols);
   int ncomponents = 2;
-
+  const float tolerance = 1.e-9;
+  const int max_sweeps = 250;
+  const int economy = 1;
+  bool verbose = false;
   printf("Calling PCA with n_components %d \n", ncomponents);
-
   auto begin = std::chrono::high_resolution_clock::now();
-  float_matrix_t ret = perform_pca(csv.matrix, csv.rows, csv.cols, ncomponents);
+  float_matrix_t ret = perform_pca(csv.matrix, csv.rows, csv.cols, ncomponents, economy, tolerance, max_sweeps, verbose);
   auto end = std::chrono::high_resolution_clock::now();
   auto elapsed =
       std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);

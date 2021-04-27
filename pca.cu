@@ -266,14 +266,10 @@ float *pca_from_S_U(svd_t svd_out, int M, int N, int k) {
   return out_cpu;
 }
 
-float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents) {
+float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents, const int econ, const float tol, const int max_sweeps, const bool verbose) {
   float *d_matrix = mean_shift(matrix, M, N);
-  const float tolerance = 1.e-9;
-  const int max_sweeps = 250;
-  const int economy = 1;
-  bool verbose = false;
   svd_t svd =
-      perform_svd(d_matrix, M, N, economy, tolerance, max_sweeps, verbose);
+      perform_svd(d_matrix, M, N, econ, tol, max_sweeps, verbose);
   float_matrix_t svd_out;
   svd_out.matrix = pca_from_S_U(svd, M, N, ncomponents);
   svd_out.rows = M;
