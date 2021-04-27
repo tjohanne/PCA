@@ -92,6 +92,26 @@ __global__ void subtract(float *matrix, float *averages, int m, int n) {
   __syncthreads();
 }
 
+__global__ void mult_S_U(float *out, float *S, float *U, int features,
+                         int samples, int k) {
+  // S is a diagonal matrix represented as a vector
+  // Note col and row switched since we are dealing with row col order
+  int col = blockIdx.y * blockDim.y + threadIdx.y;
+  int row = blockIdx.x * blockDim.x + threadIdx.x;
+  if (col < k && row < samples) {
+    // out row and col should be col in S
+    //
+
+    printf("mult_S_U col row (%d,%d) f %d s %d k %d\n", col, row, features,
+           samples, k);
+    printf("col row (%d,%d) k %d, row * k + col %d\n", col, row, k,
+           ((row * k) + col));
+    printf("col row (%d,%d) (col * samples + row) %d\n", col, row,
+           (col * samples + row));
+    out[row * k + col] = S[col] * U[col * samples + row];
+  }
+}
+
 void print_cpu_matrix(int m, int n, const float *A, const char *name) {
   for (int row = 0; row < m; row++) {
     for (int col = 0; col < n; col++) {
@@ -223,21 +243,52 @@ float *mean_shift(float *matrix, int M, int N) {
   cudaCheckError(cudaMemcpy(print_matrix, clonem, M * N * sizeof(float),
                             cudaMemcpyDeviceToHost));
   printColMatrix(M, N, print_matrix, M, "mean shifted");
-  if(print_matrix)
+  if (print_matrix)
     free(print_matrix);
   return clonem;
+}
+
+float *pca_from_S_U(svd_t svd_out, int M, int N, int k) {
+  float *out = NULL;
+  float *out_cpu = NULL;
+  // Create out matrix
+  out_cpu = (float *)malloc(k * N * sizeof(float));
+  cudaCheckError(cudaMalloc((void **)&out, k * N * sizeof(float)));
+  cudaCheckError(cudaMalloc((void **)&out, k * N * sizeof(float)));
+  // Create kernel parameters
+  printf("malloc out \n");
+  int LBLK = 32;
+  dim3 tpb(LBLK, LBLK);
+  int div = k / LBLK;
+  int div2 = M / LBLK;
+  if (k % LBLK != 0) {
+    div++;
+  }
+  if (M % LBLK != 0) {
+    div2++;
+  }
+  printf("d %d d2 %d N %d M %d k %d \n", div, div2, N, M, k);
+  dim3 bs(div2, div);
+  // Call kernel
+  mult_S_U<<<bs, tpb>>>(out, svd_out.S, svd_out.U, N, M, k);
+  cudaCheckError(
+      cudaMemcpy(out_cpu, out, k * N * sizeof(float), cudaMemcpyDeviceToHost));
+  cudaCheckError(cudaDeviceSynchronize());
+  printf("pca_from_S_U done \n");
+  return out_cpu;
 }
 
 float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents) {
   // print_cpu_matrix(M, N, matrix, "csv matrix");
   float *d_matrix = mean_shift(matrix, M, N);
   printf("mean shift complete \n");
-  svd_t svd = perform_svd(d_matrix, 5, 3);
+  printf("M %d and N %d \n", M, N);
+  svd_t svd = perform_svd(d_matrix, M, N);
   printf("svd complete \n");
   // U * S with gemm
-  float_matrix_t ret;
-  ret.matrix = transform(M, N, ncomponents, svd);
-  ret.rows = M;
-  ret.cols = N;
-  return ret;
+  float_matrix_t svd_out;
+  svd_out.matrix = pca_from_S_U(svd, M, N, ncomponents);
+  svd_out.rows = M;
+  svd_out.cols = ncomponents;
+  return svd_out;
 }

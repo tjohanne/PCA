@@ -73,7 +73,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
   float *d_S = NULL;
   float *d_U = NULL;
   float *d_V = NULL;
-  float *d_Smat = NULL;
+  // float *d_Smat = NULL;
   int *d_info = NULL;   /* error info */
   int lwork = 0;        /* size of workspace */
   float *d_work = NULL; /* devie workspace for gesvdj */
@@ -104,7 +104,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
   cudaStat3 = cudaMalloc((void **)&d_U, sizeof(float) * ldu * m);
   cudaStat4 = cudaMalloc((void **)&d_V, sizeof(float) * ldv * n);
   cudaStat5 = cudaMalloc((void **)&d_info, sizeof(int));
-  cudaStat5 = cudaMalloc((void **)&d_Smat, sizeof(float) * minmn * minmn);
+  // cudaStat5 = cudaMalloc((void **)&d_Smat, sizeof(float) * minmn * minmn);
   assert(cudaSuccess == cudaStat1);
   assert(cudaSuccess == cudaStat2);
   assert(cudaSuccess == cudaStat3);
@@ -138,14 +138,13 @@ svd_t perform_svd(float *d_A, int m, int n) {
   // printf("blocks %d threadsPerBlock %d\n", blocks, threadsPerBlock);
   // printf("minmn %d\n", minmn);
   //  transform S from a vector to a diagonal matrix
-  vec_to_diag<<<blocks, threadsPerBlock>>>(d_S, d_Smat, minmn);
+  // vec_to_diag<<<blocks, threadsPerBlock>>>(d_S, d_Smat, minmn);
 
   cudaStat1 =
       cudaMemcpy(U, d_U, sizeof(float) * ldu * m, cudaMemcpyDeviceToHost);
   cudaStat2 =
       cudaMemcpy(V, d_V, sizeof(float) * ldv * n, cudaMemcpyDeviceToHost);
-  cudaStat3 = cudaMemcpy(S, d_Smat, sizeof(float) * minmn * minmn,
-                         cudaMemcpyDeviceToHost);
+  cudaStat3 = cudaMemcpy(S, d_S, sizeof(float) * minmn, cudaMemcpyDeviceToHost);
   cudaStat4 = cudaMemcpy(&info, d_info, sizeof(int), cudaMemcpyDeviceToHost);
   cudaStat5 = cudaDeviceSynchronize();
   assert(cudaSuccess == cudaStat1);
@@ -164,7 +163,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
   }
 
   printf("S = singular values (matlab base-1)\n");
-  printMatrix(minmn, minmn, S, minmn, "S");
+  printMatrix(minmn, 1, S, minmn, "S");
   printf("=====\n");
 
   printf("U = left singular vectors (matlab base-1)\n");
@@ -176,7 +175,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
   printf("=====\n");
 
   printf("S = matrix (matlab base-1)\n");
-  printMatrix(minmn, minmn, S, minmn, "S MATRIX");
+  printMatrix(minmn, 1, S, minmn, "S MATRIX");
   printf("=====\n");
 
   status =
@@ -190,8 +189,8 @@ svd_t perform_svd(float *d_A, int m, int n) {
   /*  free resources  */
   if (d_A)
     cudaFree(d_A);
-  if (d_S)
-    cudaFree(d_S);
+  // if (d_S)
+  //   cudaFree(d_S);
   //   if (d_U)
   //     cudaFree(d_U);
   if (d_V)
@@ -213,7 +212,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
   if (gesvdj_params)
     cusolverDnDestroyGesvdjInfo(gesvdj_params);
   SVD svd;
-  svd.S = d_Smat;
+  svd.S = d_S;
   svd.V = d_V;
   svd.U = d_U;
   // cudaDeviceReset();

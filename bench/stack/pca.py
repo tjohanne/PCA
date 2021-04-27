@@ -16,7 +16,7 @@ def flip_signs(A, B):
 # where n is the number of samples and p is the number of variables
 # n, p = 5, 3
 # X = np.random.rand(n, p)
-X = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [8.0, 5.0, 11.0], [22.0, 5.0, 33.0], [6.0, 8.0, 10.0]])
+X = np.array([[1.0, 2.0, 3.0, 41.0], [4.0, 5.0, 6.0, 22.0], [8.0, 5.0, 11.0, 66.0], [22.0, 5.0, 33.0, 77.3], [6.0, 8.0, 10.0, 88.4]])
 n, p = X.shape
 print("n", n)
 print("p", p)
@@ -63,7 +63,8 @@ k = 2
 PC_k = principal_components[:, 0:k]
 US_k = U[:, 0:k].dot(S[0:k, 0:k])
 assert np.allclose(*flip_signs(PC_k, US_k))
-
+print("PC_k", PC_k)
+print("US_k", US_k)
 # 10) we used "economy size" (or "thin") SVD
 assert U.shape == (n, p)
 assert S.shape == (p, p)
