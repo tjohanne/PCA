@@ -1,6 +1,8 @@
 output/
 files/
 .vscode
+*.qdrep
+*.sqlite
 
 # Created by https://www.toptal.com/developers/gitignore/api/cuda,c++,c,vscode,ssh,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=cuda,c++,c,vscode,ssh,python

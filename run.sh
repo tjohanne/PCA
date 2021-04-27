@@ -3,10 +3,11 @@
 make clean && make
 
 echo "IRIS PCA"
-./cudaPca iris.csv
+./cudaPca iris.csv 4
 
-echo "MNIST PCA"
-./cudaPca mnist_784.csv
+# echo "MNIST PCA"
+# ./cudaPca mnist_784.csv
 
 echo "EIGENFACES PCA"
-./cudaPca face_data.csv
+# inputs are "file name" and ncomponents
+./cudaPca face_data.csv 400
