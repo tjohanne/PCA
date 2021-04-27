@@ -18,9 +18,9 @@ OBJS= $(OBJDIR)/main.o $(OBJDIR)/pca.o $(OBJDIR)/svd.o
 
 .PHONY: dirs clean
 
-all: $(EXECUTABLE) clang-format
+all: $(EXECUTABLE)
 
-clang-format: 
+format: 
 	clang-format -i *.cpp *.cu
 
 default: $(EXECUTABLE)

@@ -53,7 +53,8 @@ __global__ void vec_to_diag(float *vec, float *diag_mat, int vec_length) {
   __syncthreads();
 }
 
-svd_t perform_svd(float *d_A, int m, int n) {
+svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
+                  const int max_sweeps, bool verbose) {
   cusolverDnHandle_t cusolverH = NULL;
   cudaStream_t stream = NULL;
   gesvdjInfo_t gesvdj_params = NULL;
@@ -73,16 +74,12 @@ svd_t perform_svd(float *d_A, int m, int n) {
   float *d_S = NULL;
   float *d_U = NULL;
   float *d_V = NULL;
-  // float *d_Smat = NULL;
   int *d_info = NULL;   /* error info */
   int lwork = 0;        /* size of workspace */
   float *d_work = NULL; /* devie workspace for gesvdj */
   int info = 0;         /* host copy of error info */
-  const float tol = 1.e-3;
-  const int max_sweeps = 25000;
   const cusolverEigMode_t jobz =
       CUSOLVER_EIG_MODE_VECTOR; // compute eigenvectors.
-  const int econ = 1;           /* econ = 1 for economy size */
   double residual = 0;
   int executed_sweeps = 0;
 
@@ -95,7 +92,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
   assert(CUSOLVER_STATUS_SUCCESS == status);
   status = cusolverDnCreateGesvdjInfo(&gesvdj_params);
   assert(CUSOLVER_STATUS_SUCCESS == status);
-  status = cusolverDnXgesvdjSetTolerance(gesvdj_params, tol);
+  status = cusolverDnXgesvdjSetTolerance(gesvdj_params, tolerance);
   assert(CUSOLVER_STATUS_SUCCESS == status);
   status = cusolverDnXgesvdjSetMaxSweeps(gesvdj_params, max_sweeps);
   assert(CUSOLVER_STATUS_SUCCESS == status);
@@ -104,7 +101,6 @@ svd_t perform_svd(float *d_A, int m, int n) {
   cudaStat3 = cudaMalloc((void **)&d_U, sizeof(float) * ldu * m);
   cudaStat4 = cudaMalloc((void **)&d_V, sizeof(float) * ldv * n);
   cudaStat5 = cudaMalloc((void **)&d_info, sizeof(int));
-  // cudaStat5 = cudaMalloc((void **)&d_Smat, sizeof(float) * minmn * minmn);
   assert(cudaSuccess == cudaStat1);
   assert(cudaSuccess == cudaStat2);
   assert(cudaSuccess == cudaStat3);
@@ -112,7 +108,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
   assert(cudaSuccess == cudaStat5);
   assert(cudaSuccess == cudaStat5);
 
-  status = cusolverDnSgesvdj_bufferSize(cusolverH, jobz, econ,
+  status = cusolverDnSgesvdj_bufferSize(cusolverH, jobz, economy,
                                         m, //  nrows
                                         n, //  ncols
                                         d_A, lda, d_S, d_U, ldu, d_V, ldv,
@@ -124,7 +120,7 @@ svd_t perform_svd(float *d_A, int m, int n) {
 
   /* compute SVD */
   status =
-      cusolverDnSgesvdj(cusolverH, jobz, econ, m, n, d_A, lda, d_S, d_U, ldu,
+      cusolverDnSgesvdj(cusolverH, jobz, economy, m, n, d_A, lda, d_S, d_U, ldu,
                         d_V, ldv, d_work, lwork, d_info, gesvdj_params);
   cudaStat1 = cudaDeviceSynchronize();
   assert(CUSOLVER_STATUS_SUCCESS == status);
@@ -135,10 +131,6 @@ svd_t perform_svd(float *d_A, int m, int n) {
   if (minmn % threadsPerBlock != 0) {
     blocks++;
   }
-  // printf("blocks %d threadsPerBlock %d\n", blocks, threadsPerBlock);
-  // printf("minmn %d\n", minmn);
-  //  transform S from a vector to a diagonal matrix
-  // vec_to_diag<<<blocks, threadsPerBlock>>>(d_S, d_Smat, minmn);
 
   cudaStat1 =
       cudaMemcpy(U, d_U, sizeof(float) * ldu * m, cudaMemcpyDeviceToHost);
@@ -162,29 +154,31 @@ svd_t perform_svd(float *d_A, int m, int n) {
     printf("WARNING: info = %d : gesvdj does not converge \n", info);
   }
 
-  // printf("S = singular values (matlab base-1)\n");
-  // printMatrix(minmn, 1, S, minmn, "S");
-  // printf("=====\n");
+  if (verbose) {
+    printf("S = singular values (matlab base-1)\n");
+    printMatrix(minmn, 1, S, minmn, "S");
+    printf("=====\n");
 
-  // printf("U = left singular vectors (matlab base-1)\n");
-  // printMatrix(m, m, U, ldu, "U");
-  // printf("=====\n");
+    printf("U = left singular vectors (matlab base-1)\n");
+    printMatrix(m, m, U, ldu, "U");
+    printf("=====\n");
 
-  // printf("V = right singular vectors (matlab base-1)\n");
-  // printMatrix(n, n, V, ldv, "V");
-  // printf("=====\n");
+    printf("V = right singular vectors (matlab base-1)\n");
+    printMatrix(n, n, V, ldv, "V");
+    printf("=====\n");
 
-  // printf("S = matrix (matlab base-1)\n");
-  // printMatrix(minmn, 1, S, minmn, "S MATRIX");
-  // printf("=====\n");
+    printf("S = matrix (matlab base-1)\n");
+    printMatrix(minmn, 1, S, minmn, "S MATRIX");
+    printf("=====\n");
 
-  status =
-      cusolverDnXgesvdjGetSweeps(cusolverH, gesvdj_params, &executed_sweeps);
-  assert(CUSOLVER_STATUS_SUCCESS == status);
-  status = cusolverDnXgesvdjGetResidual(cusolverH, gesvdj_params, &residual);
-  assert(CUSOLVER_STATUS_SUCCESS == status);
-  printf("residual |A - U*S*V**H|_F = %E \n", residual);
-  printf("number of executed sweeps = %d \n", executed_sweeps);
+    status =
+        cusolverDnXgesvdjGetSweeps(cusolverH, gesvdj_params, &executed_sweeps);
+    assert(CUSOLVER_STATUS_SUCCESS == status);
+    status = cusolverDnXgesvdjGetResidual(cusolverH, gesvdj_params, &residual);
+    assert(CUSOLVER_STATUS_SUCCESS == status);
+    printf("residual |A - U*S*V**H|_F = %E \n", residual);
+    printf("number of executed sweeps = %d \n", executed_sweeps);
+  }
 
   /*  free resources  */
   if (d_A)

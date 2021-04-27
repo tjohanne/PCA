@@ -1,5 +1,6 @@
 #include "csv.cpp"
 #include "pca.cuh"
+#include <chrono>
 
 typedef struct SVD {
   float *U;
@@ -10,17 +11,20 @@ typedef struct SVD {
 svd_t perform_svd(float *A, int m, int n);
 
 int main(int argc, const char *argv[]) {
-
   std::string filename = argv[1];
   csvInfo csv = read_csv("./files/" + filename);
-  // std::string filename = "test.csv";
-  // csvInfo csv = read_csv("./files/" + filename, false);
-
   printf("Read CVS with M %d N %d \n", csv.rows, csv.cols);
-
   int ncomponents = 2;
+
   printf("Calling PCA with n_components %d \n", ncomponents);
+
+  auto begin = std::chrono::high_resolution_clock::now();
   float_matrix_t ret = perform_pca(csv.matrix, csv.rows, csv.cols, ncomponents);
+  auto end = std::chrono::high_resolution_clock::now();
+  auto elapsed =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+  printf("Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
+
   write_matrix_csv("./output/" + filename, ret.matrix, ret.rows, ret.cols);
   return 1;
 }
