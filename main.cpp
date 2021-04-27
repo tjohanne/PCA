@@ -19,7 +19,7 @@ int main(int argc, const char *argv[]) {
   printf("Read CVS with M %d N %d \n", csv.rows, csv.cols);
 
   int ncomponents = 2;
-  printf("calling pca \n");
+  printf("Calling PCA with n_components %d \n", ncomponents);
   float_matrix_t ret = perform_pca(csv.matrix, csv.rows, csv.cols, ncomponents);
   write_matrix_csv("./output/" + filename, ret.matrix, ret.rows, ret.cols);
   return 1;

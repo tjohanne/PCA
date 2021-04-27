@@ -162,21 +162,21 @@ svd_t perform_svd(float *d_A, int m, int n) {
     printf("WARNING: info = %d : gesvdj does not converge \n", info);
   }
 
-  printf("S = singular values (matlab base-1)\n");
-  printMatrix(minmn, 1, S, minmn, "S");
-  printf("=====\n");
+  // printf("S = singular values (matlab base-1)\n");
+  // printMatrix(minmn, 1, S, minmn, "S");
+  // printf("=====\n");
 
-  printf("U = left singular vectors (matlab base-1)\n");
-  printMatrix(m, m, U, ldu, "U");
-  printf("=====\n");
+  // printf("U = left singular vectors (matlab base-1)\n");
+  // printMatrix(m, m, U, ldu, "U");
+  // printf("=====\n");
 
-  printf("V = right singular vectors (matlab base-1)\n");
-  printMatrix(n, n, V, ldv, "V");
-  printf("=====\n");
+  // printf("V = right singular vectors (matlab base-1)\n");
+  // printMatrix(n, n, V, ldv, "V");
+  // printf("=====\n");
 
-  printf("S = matrix (matlab base-1)\n");
-  printMatrix(minmn, 1, S, minmn, "S MATRIX");
-  printf("=====\n");
+  // printf("S = matrix (matlab base-1)\n");
+  // printMatrix(minmn, 1, S, minmn, "S MATRIX");
+  // printf("=====\n");
 
   status =
       cusolverDnXgesvdjGetSweeps(cusolverH, gesvdj_params, &executed_sweeps);
