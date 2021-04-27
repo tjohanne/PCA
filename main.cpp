@@ -11,10 +11,10 @@ svd_t perform_svd(float *A, int m, int n);
 
 int main(int argc, const char *argv[]) {
 
-  // std::string filename = argv[1];
-  // csvInfo csv = read_csv("./files/" + filename);
-  std::string filename = "test.csv";
-  csvInfo csv = read_csv("./files/" + filename, false);
+  std::string filename = argv[1];
+  csvInfo csv = read_csv("./files/" + filename);
+  // std::string filename = "test.csv";
+  // csvInfo csv = read_csv("./files/" + filename, false);
 
   printf("Read CVS with M %d N %d \n", csv.rows, csv.cols);
 

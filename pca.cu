@@ -102,14 +102,15 @@ __global__ void mult_S_U(float *out, float *S, float *U, int features,
     // out row and col should be col in S
     //
 
-    printf("mult_S_U col row (%d,%d) f %d s %d k %d\n", col, row, features,
-           samples, k);
-    printf("col row (%d,%d) k %d, row * k + col %d\n", col, row, k,
-           ((row * k) + col));
-    printf("col row (%d,%d) (col * samples + row) %d\n", col, row,
-           (col * samples + row));
+    // printf("mult_S_U col row (%d,%d) f %d s %d k %d\n", col, row, features,
+    //        samples, k);
+    // printf("col row (%d,%d) k %d, row * k + col %d\n", col, row, k,
+    //        ((row * k) + col));
+    // printf("col row (%d,%d) (col * samples + row) %d\n", col, row,
+    //        (col * samples + row));
     out[row * k + col] = S[col] * U[col * samples + row];
   }
+  __syncthreads();
 }
 
 void print_cpu_matrix(int m, int n, const float *A, const char *name) {
@@ -133,7 +134,7 @@ void printColMatrix(int m, int n, const float *A, int lda, const char *name) {
 
 void print_host_matrix(int m, int n, const float *A, const char *name) {
   float *tempmatrix;
-  cudaMalloc((void **)&tempmatrix, sizeof(float) * m * n);
+  tempmatrix = (float *)malloc(sizeof(float) * m * n);
   cudaMemcpy(tempmatrix, A, sizeof(float) * m * n, cudaMemcpyHostToDevice);
   for (int row = 0; row < m; row++) {
     for (int col = 0; col < n; col++) {
@@ -252,9 +253,9 @@ float *pca_from_S_U(svd_t svd_out, int M, int N, int k) {
   float *out = NULL;
   float *out_cpu = NULL;
   // Create out matrix
-  out_cpu = (float *)malloc(k * N * sizeof(float));
-  cudaCheckError(cudaMalloc((void **)&out, k * N * sizeof(float)));
-  cudaCheckError(cudaMalloc((void **)&out, k * N * sizeof(float)));
+  out_cpu = (float *)malloc(k * M * sizeof(float));
+  cudaCheckError(cudaMalloc((void **)&out, k * M * sizeof(float)));
+  cudaCheckError(cudaMalloc((void **)&out, k * M * sizeof(float)));
   // Create kernel parameters
   printf("malloc out \n");
   int LBLK = 32;
@@ -272,7 +273,7 @@ float *pca_from_S_U(svd_t svd_out, int M, int N, int k) {
   // Call kernel
   mult_S_U<<<bs, tpb>>>(out, svd_out.S, svd_out.U, N, M, k);
   cudaCheckError(
-      cudaMemcpy(out_cpu, out, k * N * sizeof(float), cudaMemcpyDeviceToHost));
+      cudaMemcpy(out_cpu, out, k * M * sizeof(float), cudaMemcpyDeviceToHost));
   cudaCheckError(cudaDeviceSynchronize());
   printf("pca_from_S_U done \n");
   return out_cpu;
@@ -286,6 +287,7 @@ float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents) {
   svd_t svd = perform_svd(d_matrix, M, N);
   printf("svd complete \n");
   // U * S with gemm
+  // print_host_matrix(M, M, svd.U, "U");
   float_matrix_t svd_out;
   svd_out.matrix = pca_from_S_U(svd, M, N, ncomponents);
   svd_out.rows = M;
