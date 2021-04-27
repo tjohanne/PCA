@@ -35,6 +35,7 @@ data_dir = "/home/gh/kernelpca/files/"
 result_path = "/home/gh/kernelpca/bench/sklearn/images/"
 file_name = data_dir + dataset_name
 
+
 # read data
 X = pd.read_csv(file_name)
 if 'class' in X:
@@ -47,7 +48,7 @@ X = X.values
 
 sklearn_X = X
 
-pca = PCA(n_components=2
+pca = PCA(n_components=None
         , copy=True
         , whiten=False
         , svd_solver='auto'

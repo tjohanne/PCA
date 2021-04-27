@@ -4,9 +4,9 @@ from time import perf_counter
 from helpers import *
 
 # set dataset name
-# dataset_name = "face_data.csv"
+dataset_name = "face_data.csv"
 # dataset_name = "mnist_784.csv"
-dataset_name = "iris.csv"
+# dataset_name = "iris.csv"
 data_dir = "/home/gh/kernelpca/files/"
 result_path = "/home/gh/kernelpca/bench/sklearn/images/"
 file_name = data_dir + dataset_name
