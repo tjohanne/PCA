@@ -234,8 +234,8 @@ float *mean_shift(float *matrix, int M, int N) {
   // cudaCheckError(cudaMemcpy(print_matrix, clonem, M * N * sizeof(float),
   //                           cudaMemcpyDeviceToHost));
   // printColMatrix(M, N, print_matrix, M, "mean shifted");
-  if (print_matrix)
-    free(print_matrix);
+  // if (print_matrix)
+  //   free(print_matrix);
   return clonem;
 }
 
@@ -271,6 +271,14 @@ float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents, const i
   svd_t svd =
       perform_svd(d_matrix, M, N, econ, tol, max_sweeps, verbose);
   float_matrix_t svd_out;
+  // printf("m %d n %d minmn %d\n", M, N, minmn);
+  int minmn = min(M, N);
+  svd_out.S = (float *) malloc(sizeof(float) * minmn);
+  svd_out.V = (float *) malloc(sizeof(float) * N * N);
+      cudaCheckError(
+  cudaMemcpy(svd_out.V, svd.V, N * N * sizeof(float), cudaMemcpyDeviceToHost));
+  cudaCheckError(
+      cudaMemcpy(svd_out.S, svd.S, minmn * sizeof(float), cudaMemcpyDeviceToHost));
   svd_out.matrix = pca_from_S_U(svd, M, N, ncomponents);
   svd_out.rows = M;
   svd_out.cols = ncomponents;

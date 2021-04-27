@@ -1,5 +1,7 @@
 typedef struct float_matrix {
   float* matrix;
+  float* S;
+  float* V;
   int rows;
   int cols;
 } float_matrix_t;

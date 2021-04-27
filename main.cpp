@@ -1,7 +1,12 @@
 #include "csv.cpp"
 #include "pca.cuh"
 #include <chrono>
-
+#ifndef min
+#define min(a, b) ((a < b) ? a : b)
+#endif
+#ifndef max
+#define max(a, b) ((a > b) ? a : b)
+#endif
 typedef struct SVD {
   float *U;
   float *S;
@@ -28,5 +33,7 @@ int main(int argc, const char *argv[]) {
   printf("Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
 
   write_matrix_csv("./output/" + filename, ret.matrix, ret.rows, ret.cols);
+  write_matrix_csv("./output/S_" + filename, ret.S, min(csv.cols, csv.rows), 1);
+  write_matrix_csv("./output/V_" + filename, ret.V, csv.rows, csv.cols);
   return 1;
 }

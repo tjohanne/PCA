@@ -136,6 +136,8 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+*.sqlite
+*.qdrep
 *.cover
 *.py,cover
 .hypothesis/

@@ -68,6 +68,7 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
   const int ldu = m;
   const int ldv = n;
   const int minmn = min(m, n);
+  printf("m %d n %d minmn %d\n", m, n, minmn);
   float *U = new float[ldu * m];
   float *V = new float[ldv * n];
   float *S = new float[minmn * minmn];
@@ -187,8 +188,8 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
   //   cudaFree(d_S);
   //   if (d_U)
   //     cudaFree(d_U);
-  if (d_V)
-    cudaFree(d_V);
+  // if (d_V)
+  //   cudaFree(d_V);
   if (d_info)
     cudaFree(d_info);
   if (d_work)
