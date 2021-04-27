@@ -1,12 +1,15 @@
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
 
-def plot_faces(faces, mode):
+def plot_faces(faces, method, result_path, dataset_name):
     fig, axes = plt.subplots(8, 8, figsize=(8, 8))
     for i, ax in enumerate(axes.flat):
         ax.imshow(faces[i].reshape(64, 64), cmap=plt.cm.bone)
-    plt.savefig(f'{result_path}{dataset_name}-{mode}.png')
+    plt.savefig(f'{result_path}{dataset_name}-{method}.png')
     plt.show()
 
-def plot_components(pca, ncomponents):
+def plot_components(pca, ncomponents, result_path, dataset_name, method):
     fig = plt.figure(figsize=(16, 6))
     for i in range(30):
         ax = fig.add_subplot(3, 10, i + 1, xticks=[], yticks=[])

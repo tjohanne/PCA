@@ -13,7 +13,7 @@ CXX=g++ -m64
 CXXFLAGS=-O3 -Wall
 LDFLAGS=-L/usr/local/cuda-11.2/lib64/ -lcudart -lcublas -lcusolver
 NVCC=nvcc
-NVCCFLAGS= -O3 -m64 --gpu-architecture compute_61 -ccbin /usr/bin/gcc-8 
+NVCCFLAGS= -O3 -m64 -arch compute_86 -code sm_86 -ccbin /usr/bin/g++-10
 OBJS= $(OBJDIR)/main.o $(OBJDIR)/pca.o $(OBJDIR)/svd.o
 
 .PHONY: dirs clean
