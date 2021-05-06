@@ -10,6 +10,7 @@
 #define max(a, b) ((a > b) ? a : b)
 #endif
 
+
 typedef struct SVD {
   float *U;
   float *S;
@@ -19,13 +20,23 @@ typedef struct SVD {
 svd_t perform_svd(float *A, int m, int n);
 
 int main(int argc, const char *argv[]) {
-  
-  //  parse input arguments
+  //  load data file
   std::string filename = argv[1];
+  csvInfo csv = read_csv("../data/" + filename);
+
+  //  number of principal components to find
   int ncomponents = std::stoi(argv[2]);
+
+  //  error tolerance for eigenvectors
   const float tolerance = std::atof(argv[3]);
+
+  //  max iterations for jacobi
   const int max_sweeps = std::stoi(argv[4]);
+
+  //  drop irrelevant submatrices from SVD
   const int economy = std::stoi(argv[5]);
+
+  //  print debug output
   bool verbose = false;
   if (std::stoi(argv[6]) > 0){
     verbose = true;
@@ -36,9 +47,6 @@ int main(int argc, const char *argv[]) {
   std::cout << "tolerance " << tolerance << "\n";
   std::cout << "max_sweeps " << max_sweeps << "\n";
   std::cout << "economy " << economy << "\n";
-
-  //  load data
-  csvInfo csv = read_csv("../data/" + filename);
 
   printf("Calling PCA with n_components %d ", ncomponents);
   printf("samples %d features %d \n", csv.rows, csv.cols);

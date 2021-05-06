@@ -44,6 +44,15 @@ inline void cublasAssert(cublasStatus_t code, const char *file, int line,
 #define cudaCheckError(ans) ans
 #endif
 
+
+/**
+ * @brief what does this do?
+ * 
+ * @param total 
+ * @param n 
+ * @param m 
+ * @return __global__ 
+ */
 __global__ void get_average_from_total(float *total, int n, int m) {
   int row = blockIdx.x * blockDim.x + threadIdx.x;
   if (row < n) {
@@ -52,6 +61,17 @@ __global__ void get_average_from_total(float *total, int n, int m) {
   __syncthreads();
 }
 
+
+
+/**
+ * @brief what does this do?
+ * 
+ * @param matrix 
+ * @param averages 
+ * @param m 
+ * @param n 
+ * @return __global__ 
+ */
 __global__ void subtract(float *matrix, float *averages, int m, int n) {
   int col = blockIdx.y * blockDim.y + threadIdx.y;
   int row = blockIdx.x * blockDim.x + threadIdx.x;
@@ -61,6 +81,18 @@ __global__ void subtract(float *matrix, float *averages, int m, int n) {
   __syncthreads();
 }
 
+
+/**
+ * @brief what does this do?
+ * 
+ * @param out 
+ * @param S 
+ * @param U 
+ * @param features 
+ * @param samples 
+ * @param k 
+ * @return __global__ 
+ */
 __global__ void mult_S_U(float *out, float *S, float *U, int features,
                          int samples, int k) {
   // S is a diagonal matrix represented as a vector
@@ -73,7 +105,12 @@ __global__ void mult_S_U(float *out, float *S, float *U, int features,
   __syncthreads();
 }
 
-void print_cpu_matrix(int m, int n, const float *A, const char *name) {
+
+
+/**
+ * @brief Prints m x n matrix A on host memory. 
+ */
+void print_cpu_matrix(int m, int n, const float *A) {
   for (int row = 0; row < m; row++) {
     for (int col = 0; col < n; col++) {
       float Areg = A[col + row * n];
@@ -83,7 +120,10 @@ void print_cpu_matrix(int m, int n, const float *A, const char *name) {
   }
 }
 
-void print_host_matrix(int m, int n, const float *A, const char *name) {
+/**
+ * @brief Prints m x n matrix A on device memory. 
+ */
+void print_host_matrix(int m, int n, const float *A) {
   float *tempmatrix;
   tempmatrix = (float *)malloc(sizeof(float) * m * n);
   cudaMemcpy(tempmatrix, A, sizeof(float) * m * n, cudaMemcpyHostToDevice);
@@ -96,6 +136,17 @@ void print_host_matrix(int m, int n, const float *A, const char *name) {
   }
 }
 
+
+/**
+ * @brief Centers the original input matrix by computing 
+ * the mean for each feature, and subtracting the mean 
+ * from each observation.
+ * 
+ * @param matrix 
+ * @param M 
+ * @param N 
+ * @return float* 
+ */
 float *mean_shift(float *matrix, int M, int N) {
   cublasHandle_t handle;
   float *x = new float[M];
@@ -167,6 +218,16 @@ float *mean_shift(float *matrix, int M, int N) {
   return clonem;
 }
 
+
+/**
+ * @brief what does this do?
+ * 
+ * @param svd 
+ * @param M 
+ * @param N 
+ * @param k 
+ * @return float* 
+ */
 float *pca_from_S_U(svd_t svd, int M, int N, int k) {
   float *out = NULL;
   float *out_cpu = NULL;
@@ -197,6 +258,22 @@ float *pca_from_S_U(svd_t svd, int M, int N, int k) {
   return out_cpu;
 }
 
+
+
+/**
+ * @brief 
+ * 
+ * @param matrix 
+ * @param M 
+ * @param N 
+ * @param ncomponents 
+ * @param econ 
+ * @param tol 
+ * @param max_sweeps 
+ * @param verbose 
+ * @param tl 
+ * @return float_matrix_t 
+ */
 float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents, const int econ, const float tol, 
                             const int max_sweeps, const bool verbose, TimeLogger* tl) {
   TimeLogger::timeLog* mean_shift_log;
@@ -204,8 +281,9 @@ float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents, const i
   TimeLogger::timeLog* memcpy_log;
   TimeLogger::timeLog* pca_S_U_log;
 
-  if(tl != NULL) 
+  if(tl != NULL) {
     mean_shift_log = tl->start("mean_shift()");
+  }
   float *d_matrix = mean_shift(matrix, M, N);
   if(tl != NULL) {
     cudaCheckError(cudaDeviceSynchronize());
