@@ -79,7 +79,7 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
   const cusolverEigMode_t jobz =
       CUSOLVER_EIG_MODE_VECTOR; // compute eigenvectors.
   double residual = 0;
-  int executed_sweeps = 10;
+  int executed_sweeps = 0;
   printf("Created floats\n");
   /* create cusolver handle */
   status = cusolverDnCreate(&cusolverH);

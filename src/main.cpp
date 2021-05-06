@@ -29,8 +29,8 @@ int main(int argc, const char *argv[]) {
   csvInfo csv = read_csv("../data/" + filename);
 
   //  call PCA 
-  const float tolerance = 1.e-15;
-  const int max_sweeps = 2500;
+  const float tolerance = 1.e-9;
+  const int max_sweeps = 100;
   const int economy = 1;
   bool verbose = false;
 
@@ -40,7 +40,7 @@ int main(int argc, const char *argv[]) {
   TimeLogger::timeLog *total_time = tl->start("Total Time");
   float_matrix_t ret = perform_pca(csv.matrix, csv.rows, csv.cols, ncomponents, economy, tolerance, max_sweeps, verbose, tl);
   tl->stop(total_time);
-  printf("TOTAL Time measured: %.3f seconds.\n", total_time->time_ms);
+  printf("%s TOTAL Time measured: %.3f ms.\n", total_time->time_ms);
   write_logs(tl);
   //  write results to disk
   write_matrix_csv("../output/" + filename, ret.matrix, ret.rows, ret.cols);

@@ -6,11 +6,10 @@ make clean && make -j 32 &&
 cd ../objs &&
 
 # echo "IRIS PCA"
-# ./cudaPca iris.csv 4 0
+# ./cudaPca iris.csv 4
 
 echo "MNIST PCA" &&
-./cudaPca mnist_784.csv 784 1
+./cudaPca mnist_784.csv 783
 
 # echo "EIGENFACES PCA"
-# inputs are "file name" and ncomponents
-# ./cudaPca face_data.csv 400 1
+# ./cudaPca face_data.csv 400
