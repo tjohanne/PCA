@@ -6,7 +6,6 @@
 #include "cublas_v2.h"
 #include "include/pca.cuh"
 #include "include/svd.cuh"
-#include "include/cycleTimer.h"
 #include <cuda_runtime.h>
 #ifndef min
 #define min(a, b) ((a < b) ? a : b)
@@ -285,12 +284,9 @@ float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents, const i
     tl->stop(mean_shift_log);
     perform_svd_log = tl->start("perform_svd()");
   }
-  double startTime = CycleTimer::currentSeconds();
   svd_t svd =
       perform_svd(d_matrix, M, N, econ, tol, max_sweeps, verbose);
 
-  double endTime = CycleTimer::currentSeconds();
-  printf("%.2f ms\n", 1000.f * (endTime - startTime));
   float_matrix_t svd_out;
   if(tl != NULL) {
     cudaCheckError(cudaDeviceSynchronize());
