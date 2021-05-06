@@ -58,8 +58,6 @@ csvInfo read_csv(std::string filename, bool ignore_last_col = true,
   if (ignore_last_col) {
     col_names.pop_back();
   }
-  std::cout << "Features" << col_names.size() << std::endl;
-  std::cout << "Samples" << num_lines << std::endl;
   num_cols = col_names.size();
   myFile.clear();
   myFile.seekg(0);
@@ -111,6 +109,7 @@ void write_matrix_csv(std::string filename, float *matrix, int rows, int cols,
   std::ofstream myFile(filename);
 
   // Send column names to the stream
+  printf("Writing column names\n");
   if (write_col_names) {
     for (int j = 0; j < cols; j++) {
       myFile << j;
@@ -119,6 +118,7 @@ void write_matrix_csv(std::string filename, float *matrix, int rows, int cols,
     }
     myFile << "\n";
   }
+  printf("Writing Rows\n");
 
   // Send data to the stream
   for (int i = 0; i < rows; i++) {
@@ -129,7 +129,7 @@ void write_matrix_csv(std::string filename, float *matrix, int rows, int cols,
     }
     myFile << "\n";
   }
-
+  printf("write_matrix_csv Done\n");
   // Close the file
   myFile.close();
 }

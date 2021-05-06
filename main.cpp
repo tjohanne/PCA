@@ -19,10 +19,11 @@ typedef struct SVD {
 svd_t perform_svd(float *A, int m, int n);
 
 int main(int argc, const char *argv[]) {
-
+  
   //  parse input arguments
   std::string filename = argv[1];
   int ncomponents = std::stoi(argv[2]);
+  bool write_s_v = (bool) std::stoi(argv[3]);
   assert(ncomponents > 0);
 
   //  load data
@@ -37,15 +38,17 @@ int main(int argc, const char *argv[]) {
 
   printf("Calling PCA with n_components %d \n", ncomponents);
   auto begin = std::chrono::high_resolution_clock::now();
-  float_matrix_t ret = perform_pca(csv.matrix, csv.rows, csv.cols, ncomponents, economy, tolerance, max_sweeps, verbose);
+  float_matrix_t ret = perform_pca(csv.matrix, csv.rows, csv.cols, ncomponents, economy, tolerance, max_sweeps, verbose, write_s_v);
   auto end = std::chrono::high_resolution_clock::now();
   auto elapsed =
       std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-  printf("Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
-
+  printf("TOTAL Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
+  printf("Writing to disk. Write S and V also ?%d\n", write_s_v);
   //  write results to disk
   write_matrix_csv("./output/" + filename, ret.matrix, ret.rows, ret.cols);
-  write_matrix_csv("./output/S_" + filename, ret.S, min(csv.cols, csv.rows), 1);
-  write_matrix_csv("./output/V_" + filename, ret.V, csv.rows, csv.cols);
+  if(write_s_v) {
+    write_matrix_csv("./output/S_" + filename, ret.S, min(csv.cols, csv.rows), 1);
+    write_matrix_csv("./output/V_" + filename, ret.V, csv.rows, csv.cols);
+  }
   return 1;
 }

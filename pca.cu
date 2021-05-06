@@ -2,7 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <chrono>
 #include "cublas_v2.h"
 #include "pca.cuh"
 #include "svd.cuh"
@@ -163,10 +163,12 @@ float *transform(int nsamples, int nfeatures, int ncomponents, svd_t svd) {
     cudaFree(d_out_mat);
   // printMatrix(nsamples, nfeatures, out_mat, nsamples, "transformed matrix");
   // print_cpu_matrix(nsamples, nfeatures, out_mat, "transformed matrix");
+  cublasCheckError(cublasDestroy(handle));
   return out_mat;
 }
 
 float *mean_shift(float *matrix, int M, int N) {
+  auto begin = std::chrono::high_resolution_clock::now();
   cublasHandle_t handle;
   float *x = new float[M];
   float *y = new float[N];
@@ -183,21 +185,44 @@ float *mean_shift(float *matrix, int M, int N) {
   for (int i = 0; i < N; i++) {
     y[i] = 0.0f;
   }
+  cudaCheckError(cudaDeviceSynchronize());
+  auto end = std::chrono::high_resolution_clock::now();
+  auto elapsed =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+  printf("mean_shift first calls Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
+  begin = std::chrono::high_resolution_clock::now();
   // will need to call cublasDestroy() at some point
   cublasCheckError(cublasCreate(&handle));
+  cudaCheckError(cudaDeviceSynchronize());
+
+  end = std::chrono::high_resolution_clock::now();
+  elapsed =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+  printf("mean_shift cublasCreate Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
+  begin = std::chrono::high_resolution_clock::now();
   print_matrix = (float *)malloc(sizeof(float) * M * N);
   cudaCheckError(cudaMalloc((void **)&d_matrix, M * N * sizeof(float)));
   cudaCheckError(cudaMalloc((void **)&clonem, M * N * sizeof(float)));
   cudaCheckError(cudaMalloc((void **)&d_x, M * sizeof(float)));
   cudaCheckError(cudaMalloc((void **)&d_y, N * sizeof(float)));
+
   cudaCheckError(cudaMemcpy(d_x, x, M * sizeof(float), cudaMemcpyHostToDevice));
   cudaCheckError(cudaMemcpy(d_matrix, matrix, M * N * sizeof(float),
                             cudaMemcpyHostToDevice));
   cudaCheckError(cudaMemcpy(print_matrix, d_matrix, M * N * sizeof(float),
                             cudaMemcpyDeviceToHost));
+
+
+  cudaCheckError(cudaDeviceSynchronize());
+  end = std::chrono::high_resolution_clock::now();
+  elapsed =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+  printf("mean_shift second half Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
   // or CUBLAS_OP_T?
   cublasCheckError(cublasSgemv(handle, CUBLAS_OP_N, N, M, &alpha, d_matrix, N,
                                d_x, 1, &beta, d_y, 1));
+
+  cudaCheckError(cudaDeviceSynchronize());
   const int threadsPerBlock = 512;
   int blocks = N / threadsPerBlock;
   if (N % threadsPerBlock != 0) {
@@ -239,7 +264,7 @@ float *mean_shift(float *matrix, int M, int N) {
   return clonem;
 }
 
-float *pca_from_S_U(svd_t svd_out, int M, int N, int k) {
+float *pca_from_S_U(svd_t svd, int M, int N, int k) {
   float *out = NULL;
   float *out_cpu = NULL;
   // Create out matrix
@@ -259,28 +284,59 @@ float *pca_from_S_U(svd_t svd_out, int M, int N, int k) {
   }
   dim3 bs(div2, div);
   // Call kernel
-  mult_S_U<<<bs, tpb>>>(out, svd_out.S, svd_out.U, N, M, k);
+  mult_S_U<<<bs, tpb>>>(out, svd.S, svd.U, N, M, k);
+  cudaCheckError(cudaFree(svd.V));
+  cudaCheckError(cudaFree(svd.U));
+  cudaCheckError(cudaFree(svd.S));
   cudaCheckError(
       cudaMemcpy(out_cpu, out, k * M * sizeof(float), cudaMemcpyDeviceToHost));
   cudaCheckError(cudaDeviceSynchronize());
   return out_cpu;
 }
 
-float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents, const int econ, const float tol, const int max_sweeps, const bool verbose) {
+float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents, const int econ, const float tol, 
+                            const int max_sweeps, const bool verbose, const bool include_s_v) {
+  auto begin = std::chrono::high_resolution_clock::now();
   float *d_matrix = mean_shift(matrix, M, N);
+  cudaCheckError(cudaDeviceSynchronize());
+  auto end = std::chrono::high_resolution_clock::now();
+  auto elapsed =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+  printf("mean_shift Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
+  begin = std::chrono::high_resolution_clock::now();
   svd_t svd =
       perform_svd(d_matrix, M, N, econ, tol, max_sweeps, verbose);
   float_matrix_t svd_out;
+  cudaCheckError(cudaDeviceSynchronize());
+  end = std::chrono::high_resolution_clock::now();
+  elapsed =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+  printf("perform_svd Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
   // printf("m %d n %d minmn %d\n", M, N, minmn);
+  begin = std::chrono::high_resolution_clock::now();
   int minmn = min(M, N);
-  svd_out.S = (float *) malloc(sizeof(float) * minmn);
-  svd_out.V = (float *) malloc(sizeof(float) * N * N);
-      cudaCheckError(
-  cudaMemcpy(svd_out.V, svd.V, N * N * sizeof(float), cudaMemcpyDeviceToHost));
-  cudaCheckError(
+  if(include_s_v) {
+    svd_out.S = (float *) malloc(sizeof(float) * minmn);
+    svd_out.V = (float *) malloc(sizeof(float) * N * N);
+    cudaCheckError(
+      cudaMemcpy(svd_out.V, svd.V, N * N * sizeof(float), cudaMemcpyDeviceToHost));
+    cudaCheckError(
       cudaMemcpy(svd_out.S, svd.S, minmn * sizeof(float), cudaMemcpyDeviceToHost));
+    cudaCheckError(cudaDeviceSynchronize());
+  }
+  
+  end = std::chrono::high_resolution_clock::now();
+  elapsed =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+  printf("V and S memcpy Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
+  begin = std::chrono::high_resolution_clock::now();
   svd_out.matrix = pca_from_S_U(svd, M, N, ncomponents);
   svd_out.rows = M;
   svd_out.cols = ncomponents;
+  cudaCheckError(cudaDeviceSynchronize());
+  end = std::chrono::high_resolution_clock::now();
+  elapsed =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+  printf("pca_from_S_U Time measured: %.3f seconds.\n", elapsed.count() * 1e-9);
   return svd_out;
 }

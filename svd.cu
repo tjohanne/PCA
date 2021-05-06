@@ -69,9 +69,6 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
   const int ldv = n;
   const int minmn = min(m, n);
   printf("m %d n %d minmn %d\n", m, n, minmn);
-  float *U = new float[ldu * m];
-  float *V = new float[ldv * n];
-  float *S = new float[minmn * minmn];
   float *d_S = NULL;
   float *d_U = NULL;
   float *d_V = NULL;
@@ -83,7 +80,7 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
       CUSOLVER_EIG_MODE_VECTOR; // compute eigenvectors.
   double residual = 0;
   int executed_sweeps = 0;
-
+  printf("Created floats\n");
   /* create cusolver handle */
   status = cusolverDnCreate(&cusolverH);
   assert(CUSOLVER_STATUS_SUCCESS == status);
@@ -97,6 +94,7 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
   assert(CUSOLVER_STATUS_SUCCESS == status);
   status = cusolverDnXgesvdjSetMaxSweeps(gesvdj_params, max_sweeps);
   assert(CUSOLVER_STATUS_SUCCESS == status);
+  printf("Created streams\n");
 
   cudaStat2 = cudaMalloc((void **)&d_S, sizeof(float) * minmn);
   cudaStat3 = cudaMalloc((void **)&d_U, sizeof(float) * ldu * m);
@@ -108,14 +106,14 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
   assert(cudaSuccess == cudaStat4);
   assert(cudaSuccess == cudaStat5);
   assert(cudaSuccess == cudaStat5);
-
+  printf("Cuda malloc done\n");
   status = cusolverDnSgesvdj_bufferSize(cusolverH, jobz, economy,
                                         m, //  nrows
                                         n, //  ncols
                                         d_A, lda, d_S, d_U, ldu, d_V, ldv,
                                         &lwork, gesvdj_params);
   assert(CUSOLVER_STATUS_SUCCESS == status);
-
+  printf("cusolverDnSgesvdj_bufferSize done\n");
   cudaStat1 = cudaMalloc((void **)&d_work, sizeof(float) * lwork);
   assert(cudaSuccess == cudaStat1);
 
@@ -126,25 +124,22 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
   cudaStat1 = cudaDeviceSynchronize();
   assert(CUSOLVER_STATUS_SUCCESS == status);
   assert(cudaSuccess == cudaStat1);
+  printf("cusolverDnSgesvdj done\n");
 
   const int threadsPerBlock = 512;
   int blocks = minmn / threadsPerBlock;
   if (minmn % threadsPerBlock != 0) {
     blocks++;
   }
-
-  cudaStat1 =
-      cudaMemcpy(U, d_U, sizeof(float) * ldu * m, cudaMemcpyDeviceToHost);
-  cudaStat2 =
-      cudaMemcpy(V, d_V, sizeof(float) * ldv * n, cudaMemcpyDeviceToHost);
-  cudaStat3 = cudaMemcpy(S, d_S, sizeof(float) * minmn, cudaMemcpyDeviceToHost);
-  cudaStat4 = cudaMemcpy(&info, d_info, sizeof(int), cudaMemcpyDeviceToHost);
-  cudaStat5 = cudaDeviceSynchronize();
+  printf("Cudamemcpy starting\n");
+  printf("Cudamemcpy3 done\n");
+  cudaStat1 = cudaMemcpy(&info, d_info, sizeof(int), cudaMemcpyDeviceToHost);
+  printf("Cudamemcpy1 done\n");
+  printf("ldu %d m %d \n", ldu, m);
+  printf("All cudamemcpy done\n");
+  cudaStat2 = cudaDeviceSynchronize();
   assert(cudaSuccess == cudaStat1);
   assert(cudaSuccess == cudaStat2);
-  assert(cudaSuccess == cudaStat3);
-  assert(cudaSuccess == cudaStat4);
-  assert(cudaSuccess == cudaStat5);
 
   if (0 == info) {
     printf("gesvdj converges \n");
@@ -156,21 +151,6 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
   }
 
   if (verbose) {
-    printf("S = singular values (matlab base-1)\n");
-    printMatrix(minmn, 1, S, minmn, "S");
-    printf("=====\n");
-
-    printf("U = left singular vectors (matlab base-1)\n");
-    printMatrix(m, m, U, ldu, "U");
-    printf("=====\n");
-
-    printf("V = right singular vectors (matlab base-1)\n");
-    printMatrix(n, n, V, ldv, "V");
-    printf("=====\n");
-
-    printf("S = matrix (matlab base-1)\n");
-    printMatrix(minmn, 1, S, minmn, "S MATRIX");
-    printf("=====\n");
 
     status =
         cusolverDnXgesvdjGetSweeps(cusolverH, gesvdj_params, &executed_sweeps);
@@ -180,7 +160,6 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
     printf("residual |A - U*S*V**H|_F = %E \n", residual);
     printf("number of executed sweeps = %d \n", executed_sweeps);
   }
-
   /*  free resources  */
   if (d_A)
     cudaFree(d_A);
@@ -194,12 +173,7 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
     cudaFree(d_info);
   if (d_work)
     cudaFree(d_work);
-  if (U)
-    free(U);
-  if (V)
-    free(V);
-  if (S)
-    free(S);
+  printf("Frees done\n");
   if (cusolverH)
     cusolverDnDestroy(cusolverH);
   if (stream)
@@ -211,5 +185,6 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
   svd.V = d_V;
   svd.U = d_U;
   // cudaDeviceReset();
+  printf("Return svd \n");
   return svd;
 }
