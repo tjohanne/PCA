@@ -1,3 +1,4 @@
+
 #include <fstream>
 #include <iostream>
 #include <sstream>   // std::stringstream
@@ -5,7 +6,7 @@
 #include <string>
 #include <utility> // std::pair
 #include <vector>
-
+#include "include/timelogger.h"
 class csvInfo {
 public:
   float *matrix;
@@ -13,7 +14,6 @@ public:
   int rows;
   std::vector<std::string> column_names;
 };
-
 /**
  * Based on this:
  * https://www.gormanalysis.com/blog/reading-and-writing-csv-files-with-cpp/
@@ -128,6 +128,7 @@ void write_matrix_csv(std::string filename, float *matrix, int rows, int cols,
         myFile << ","; // No comma at end of line
     }
     myFile << "\n";
+    myFile.flush();// TODO try flushing
   }
   printf("write_matrix_csv Done\n");
   // Close the file
@@ -152,4 +153,19 @@ void print_csv(csvInfo csv) {
   std::cout << "cols " << csv.cols << std::endl;
   std::cout << "rows  " << csv.rows << std::endl;
   std::cout << "first col name " << csv.column_names[0] << std::endl;
+}
+
+void write_logs(TimeLogger* logger) {
+  std::string filename = logger->log_name;
+  std::ofstream myFile(filename);
+  myFile << "Function Name,Features,Samples,N Components,Time(ms)\n";
+  std::vector<TimeLogger::timeLog*> logs = logger->logs;
+  for(unsigned int i = 0; i < logs.size(); i++) {
+    myFile << logs[i]->name << "," << logs[i]->features << "," << logs[i]->samples 
+            << "," << logs[i]->n_components << "," << logs[i]->time_ms << "\n";
+    free(logs[i]);
+  }
+  std::cout << "Wrote " << logs.size() << " time measurements to " << filename << std::endl;
+  free(logger);
+  myFile.close();
 }

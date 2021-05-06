@@ -1,5 +1,7 @@
 output/
 data/
+files/
+logs/*
 .vscode
 *.qdrep
 *.sqlite

@@ -5,7 +5,7 @@
  * -lcusolver
  *   TODO check nvcc flag?
  */
-#include "svd.cuh"
+#include "include/svd.cuh"
 #include <assert.h>
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
@@ -131,12 +131,7 @@ svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
   if (minmn % threadsPerBlock != 0) {
     blocks++;
   }
-  printf("Cudamemcpy starting\n");
-  printf("Cudamemcpy3 done\n");
   cudaStat1 = cudaMemcpy(&info, d_info, sizeof(int), cudaMemcpyDeviceToHost);
-  printf("Cudamemcpy1 done\n");
-  printf("ldu %d m %d \n", ldu, m);
-  printf("All cudamemcpy done\n");
   cudaStat2 = cudaDeviceSynchronize();
   assert(cudaSuccess == cudaStat1);
   assert(cudaSuccess == cudaStat2);

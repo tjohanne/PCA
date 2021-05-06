@@ -1,4 +1,6 @@
-EXECUTABLE := cudaPca
+OBJDIR=../objs
+
+EXECUTABLE := ${OBJDIR}/cudaPca
 CU_FILES   := pca.cu svd.cu
 CU_DEPS    :=
 CC_FILES   := main.cpp
@@ -8,13 +10,12 @@ all: $(EXECUTABLE)
 
 ###########################################################
 
-OBJDIR=objs
 CXX=g++ -m64
 CXXFLAGS=-O3 -Wall
 LDFLAGS=-L/usr/local/cuda-11.2/lib64/ -lcudart -lcublas -lcusolver
 NVCC=nvcc
 NVCCFLAGS= -O3 -m64 -arch compute_86 -code sm_86 -ccbin /usr/bin/g++-10
-OBJS= $(OBJDIR)/main.o $(OBJDIR)/pca.o $(OBJDIR)/svd.o
+OBJS= $(OBJDIR)/main.o $(OBJDIR)/timelogger.o $(OBJDIR)/pca.o $(OBJDIR)/svd.o
 
 .PHONY: dirs clean
 
