@@ -57,5 +57,5 @@ int main(int argc, const char *argv[]) {
   free(ret.S);
   free(ret.V);
   free(ret.matrix);
-  return 1;
+  return 0;
 }

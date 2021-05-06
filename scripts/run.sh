@@ -9,7 +9,6 @@ cd ../objs &&
 # echo "IRIS PCA"
 # ./cudaPca iris.csv 4 0
 
-
 DATA=mnist_784.csv
 NCOMP=784
 TOL=1.e-7
