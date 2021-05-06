@@ -11,7 +11,7 @@ void TimeLogger::stop(timeLog* tl) {
     tl->end_time = end;
     auto elapsed =
       std::chrono::duration_cast<std::chrono::nanoseconds>(end - tl->start_time);
-    tl->time_ms = elapsed.count() * 1e-9;
+    tl->time_ms = elapsed.count() * 1e-6;
 }
 
 

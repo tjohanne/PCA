@@ -18,7 +18,7 @@ if 'variety' in X:
     X = X.drop('variety', axis=1)
 X = np.array(X.values, dtype="float64")
 samples, features = X.shape
-n_components = 784
+n_components = features
 print("SKCUDA Running PCA with {} features, {} samples, and {} n_components on dataset {}".format(X.shape[1], X.shape[0], n_components, dataset_name))
 time_init_pca = dt.now()
 pca = cuPCA(n_components=n_components) # map the data to 4 dimensions
