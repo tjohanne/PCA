@@ -109,7 +109,6 @@ void write_matrix_csv(std::string filename, float *matrix, int rows, int cols,
   std::ofstream myFile(filename);
 
   // Send column names to the stream
-  printf("Writing column names\n");
   if (write_col_names) {
     for (int j = 0; j < cols; j++) {
       myFile << j;
@@ -118,7 +117,6 @@ void write_matrix_csv(std::string filename, float *matrix, int rows, int cols,
     }
     myFile << "\n";
   }
-  printf("Writing Rows\n");
 
   // Send data to the stream
   for (int i = 0; i < rows; i++) {
@@ -130,7 +128,6 @@ void write_matrix_csv(std::string filename, float *matrix, int rows, int cols,
     myFile << "\n";
     myFile.flush();// TODO try flushing
   }
-  printf("write_matrix_csv Done\n");
   // Close the file
   myFile.close();
 }
