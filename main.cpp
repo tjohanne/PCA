@@ -31,8 +31,8 @@ int main(int argc, const char *argv[]) {
   printf("Read CVS with M %d N %d \n", csv.rows, csv.cols);
 
   //  call PCA 
-  const float tolerance = 1.e-9;
-  const int max_sweeps = 100;
+  const float tolerance = 1.e-15;
+  const int max_sweeps = 2500;
   const int economy = 1;
   bool verbose = false;
 

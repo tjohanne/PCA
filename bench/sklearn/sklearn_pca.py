@@ -4,12 +4,13 @@ from time import perf_counter
 from helpers import *
 
 # set dataset name
-dataset_name = "face_data.csv"
+data_file_name = "face_data.csv"
+dataset_name = "Eigenfaces"
 # dataset_name = "mnist_784.csv"
 # dataset_name = "iris.csv"
 data_dir = "/home/gh/kernelpca/files/"
 result_path = "/home/gh/kernelpca/bench/sklearn/images/"
-file_name = data_dir + dataset_name
+file_name = data_dir + data_file_name
 
 # read data
 X = pd.read_csv(file_name)
@@ -23,11 +24,11 @@ X = X.values
 
 print(f"file: {file_name}, shape {X.shape}")
 
-if dataset_name == "face_data.csv":
+if dataset_name == "Eigenfaces":
     plot_faces(faces=X, method="raw", result_path=result_path, dataset_name=dataset_name)
 
 # run, time, and plot Vanilla PCA
-ncomponents = 100
+ncomponents = 400
 SVD_METHODS = ['auto', 'randomized', 'arpack']
 
 for method in SVD_METHODS:
@@ -44,8 +45,8 @@ for method in SVD_METHODS:
         time2 = perf_counter()
 
         
-        if dataset_name == "face_data.csv":
-            plot_components(pca
+        if dataset_name == "Eigenfaces":
+            plot_components(pca.components_
                             , ncomponents=ncomponents
                             , result_path=result_path
                             , dataset_name=dataset_name
@@ -58,13 +59,6 @@ for method in SVD_METHODS:
         print(e)
         print(f"Error - method {method}")
         pass
-
-
-
-
-
-
-
 
 
 # recovered_images=[reconstruction(Y, C, M, h, w, i) for i in range(len(images))]
