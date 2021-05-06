@@ -21,11 +21,11 @@ class TimeLogger {
                     time_ms = -123456789.0; // To identify logs without stop()
                 }
     };
-    std::string log_name;
     std::vector<timeLog*> logs;
     int features;
     int samples;
     int n_components;
+    std::string log_name;
     TimeLogger(int features, int samples, int n_components, std::string log_name);
     timeLog* start(std::string name);
     void stop(timeLog* tl);

@@ -40,22 +40,16 @@ int main(int argc, const char *argv[]) {
   //  load data
   csvInfo csv = read_csv("../data/" + filename);
 
-  //  call PCA 
-  const float tolerance = 1.e-9;
-  const int max_sweeps = 100;
-  const int economy = 1;
-  bool verbose = false;
-
   printf("Calling PCA with n_components %d ", ncomponents);
   printf("samples %d features %d \n", csv.rows, csv.cols);
   TimeLogger *tl = new TimeLogger(csv.rows, csv.cols, ncomponents, "../logs/" + filename);
   TimeLogger::timeLog *total_time = tl->start("Total Time");
   float_matrix_t ret = perform_pca(csv.matrix, csv.rows, csv.cols, ncomponents, economy, tolerance, max_sweeps, verbose, tl);
   tl->stop(total_time);
-  printf("%s TOTAL Time measured: %.3f ms.\n", total_time->time_ms);
+  printf("PCA on file %s TOTAL Time measured: %f ms.\n", filename.c_str(), total_time->time_ms);
   write_logs(tl);
 
-  
+  printf("Writing output matrices\n");
   //  write results to disk
   write_matrix_csv("../output/" + filename, ret.matrix, ret.rows, ret.cols);
   write_matrix_csv("../output/S_" + filename, ret.S, min(csv.cols, csv.rows), 1);
