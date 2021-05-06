@@ -46,6 +46,15 @@ inline void cublasAssert(cublasStatus_t code, const char *file, int line,
 #define cudaCheckError(ans) ans
 #endif
 
+
+/**
+ * @brief what does this do?
+ * 
+ * @param total 
+ * @param n 
+ * @param m 
+ * @return __global__ 
+ */
 __global__ void get_average_from_total(float *total, int n, int m) {
   int row = blockIdx.x * blockDim.x + threadIdx.x;
   if (row < n) {
@@ -54,6 +63,17 @@ __global__ void get_average_from_total(float *total, int n, int m) {
   __syncthreads();
 }
 
+
+
+/**
+ * @brief what does this do?
+ * 
+ * @param matrix 
+ * @param averages 
+ * @param m 
+ * @param n 
+ * @return __global__ 
+ */
 __global__ void subtract(float *matrix, float *averages, int m, int n) {
   int col = blockIdx.y * blockDim.y + threadIdx.y;
   int row = blockIdx.x * blockDim.x + threadIdx.x;
@@ -63,6 +83,18 @@ __global__ void subtract(float *matrix, float *averages, int m, int n) {
   __syncthreads();
 }
 
+
+/**
+ * @brief what does this do?
+ * 
+ * @param out 
+ * @param S 
+ * @param U 
+ * @param features 
+ * @param samples 
+ * @param k 
+ * @return __global__ 
+ */
 __global__ void mult_S_U(float *out, float *S, float *U, int features,
                          int samples, int k) {
   // S is a diagonal matrix represented as a vector
@@ -75,6 +107,16 @@ __global__ void mult_S_U(float *out, float *S, float *U, int features,
   __syncthreads();
 }
 
+
+
+/**
+ * @brief what does this do?
+ * 
+ * @param m 
+ * @param n 
+ * @param A 
+ * @param name 
+ */
 void print_cpu_matrix(int m, int n, const float *A, const char *name) {
   for (int row = 0; row < m; row++) {
     for (int col = 0; col < n; col++) {
@@ -85,6 +127,17 @@ void print_cpu_matrix(int m, int n, const float *A, const char *name) {
   }
 }
 
+
+
+/**
+ * @brief what does this do?
+ * 
+ * @param m 
+ * @param n 
+ * @param A 
+ * @param lda 
+ * @param name 
+ */
 void printColMatrix(int m, int n, const float *A, int lda, const char *name) {
   for (int row = 0; row < m; row++) {
     for (int col = 0; col < n; col++) {
@@ -94,6 +147,15 @@ void printColMatrix(int m, int n, const float *A, int lda, const char *name) {
   }
 }
 
+
+/**
+ * @brief  what does this do?
+ * 
+ * @param m 
+ * @param n 
+ * @param A 
+ * @param name 
+ */
 void print_host_matrix(int m, int n, const float *A, const char *name) {
   float *tempmatrix;
   tempmatrix = (float *)malloc(sizeof(float) * m * n);
@@ -107,37 +169,17 @@ void print_host_matrix(int m, int n, const float *A, const char *name) {
   }
 }
 
-float *transform(int nsamples, int nfeatures, int ncomponents, svd_t svd) {
-  cublasHandle_t handle;
-  float alpha = 1.0;
-  float beta = 0.0;
-  cublasOperation_t transa = CUBLAS_OP_N; // no transpose
-  cublasOperation_t transb = CUBLAS_OP_N; // no transpose
-  float *out_mat = (float *)malloc(sizeof(float) * nsamples * nfeatures);
-  for (int i = 0; i < nsamples * nfeatures; i++) {
-    out_mat[i] = 0.0f;
-  }
-  float *d_out_mat = NULL;
 
-  cudaMalloc((void **)&d_out_mat, sizeof(float) * nsamples * nfeatures);
-  cudaMemcpy(d_out_mat, out_mat, sizeof(float) * nsamples * nfeatures,
-             cudaMemcpyHostToDevice);
-  cublasCheckError(cublasCreate(&handle));
-  // assert(cudaSuccess == cudaStat1);
-  cublasCheckError(cublasSgemm(handle, transa, transb, nsamples, nfeatures,
-                               nfeatures, &alpha, svd.U, nsamples, svd.S,
-                               nfeatures, &beta, d_out_mat, nsamples));
-
-  cudaMemcpy(out_mat, d_out_mat, sizeof(float) * nsamples * nfeatures,
-             cudaMemcpyDeviceToHost);
-  if (d_out_mat)
-    cudaFree(d_out_mat);
-  // printMatrix(nsamples, nfeatures, out_mat, nsamples, "transformed matrix");
-  // print_cpu_matrix(nsamples, nfeatures, out_mat, "transformed matrix");
-  cublasCheckError(cublasDestroy(handle));
-  return out_mat;
-}
-
+/**
+ * @brief Centers the original input matrix by computing 
+ * the mean for each feature, and subtracting the mean 
+ * from each observation.
+ * 
+ * @param matrix 
+ * @param M 
+ * @param N 
+ * @return float* 
+ */
 float *mean_shift(float *matrix, int M, int N) {
   cublasHandle_t handle;
   float *x = new float[M];
@@ -209,6 +251,16 @@ float *mean_shift(float *matrix, int M, int N) {
   return clonem;
 }
 
+
+/**
+ * @brief what does this do?
+ * 
+ * @param svd 
+ * @param M 
+ * @param N 
+ * @param k 
+ * @return float* 
+ */
 float *pca_from_S_U(svd_t svd, int M, int N, int k) {
   float *out = NULL;
   float *out_cpu = NULL;
@@ -239,6 +291,22 @@ float *pca_from_S_U(svd_t svd, int M, int N, int k) {
   return out_cpu;
 }
 
+
+
+/**
+ * @brief 
+ * 
+ * @param matrix 
+ * @param M 
+ * @param N 
+ * @param ncomponents 
+ * @param econ 
+ * @param tol 
+ * @param max_sweeps 
+ * @param verbose 
+ * @param tl 
+ * @return float_matrix_t 
+ */
 float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents, const int econ, const float tol, 
                             const int max_sweeps, const bool verbose, TimeLogger* tl) {
   TimeLogger::timeLog* mean_shift_log;
@@ -246,8 +314,9 @@ float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents, const i
   TimeLogger::timeLog* memcpy_log;
   TimeLogger::timeLog* pca_S_U_log;
 
-  if(tl != NULL) 
+  if(tl != NULL) {
     mean_shift_log = tl->start("mean_shift()");
+  }
   float *d_matrix = mean_shift(matrix, M, N);
   if(tl != NULL) {
     cudaCheckError(cudaDeviceSynchronize());

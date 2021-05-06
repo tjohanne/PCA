@@ -11,6 +11,17 @@
 #ifndef max
 #define max(a, b) ((a > b) ? a : b)
 #endif
+
+
+/**
+ * @brief 
+ * 
+ * @param m 
+ * @param n 
+ * @param A 
+ * @param lda 
+ * @param name 
+ */
 void printMatrix(int m, int n, const float *A, int lda, const char *name) {
   for (int row = 0; row < m; row++) {
     for (int col = 0; col < n; col++) {
@@ -20,6 +31,17 @@ void printMatrix(int m, int n, const float *A, int lda, const char *name) {
   }
 }
 
+
+
+/**
+ * @brief 
+ * 
+ * @param m 
+ * @param n 
+ * @param A 
+ * @param lda 
+ * @param name 
+ */
 void printMatrixcsv(int m, int n, const float *A, int lda, const char *name) {
   for (int row = 0; row < m; row++) {
     for (int col = 0; col < n; col++) {
@@ -38,14 +60,19 @@ void printVector(int m, const float *A, const char *name) {
   }
 }
 
-__global__ void vec_to_diag(float *vec, float *diag_mat, int vec_length) {
-  int diag_index = blockIdx.x * blockDim.x + threadIdx.x;
-  if (diag_index < vec_length) {
-    diag_mat[vec_length * diag_index + diag_index] = vec[diag_index];
-  }
-  __syncthreads();
-}
 
+/**
+ * @brief 
+ * 
+ * @param d_A 
+ * @param m 
+ * @param n 
+ * @param economy 
+ * @param tolerance 
+ * @param max_sweeps 
+ * @param verbose 
+ * @return svd_t 
+ */
 svd_t perform_svd(float *d_A, int m, int n, int economy, const float tolerance,
                   const int max_sweeps, bool verbose) {
   cusolverDnHandle_t cusolverH = NULL;

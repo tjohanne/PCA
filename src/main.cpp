@@ -10,6 +10,7 @@
 #define max(a, b) ((a > b) ? a : b)
 #endif
 
+
 typedef struct SVD {
   float *U;
   float *S;
@@ -20,7 +21,8 @@ svd_t perform_svd(float *A, int m, int n);
 
 int main(int argc, const char *argv[]) {
   //  load data file
-  csvInfo csv = read_csv("../data/" + argv[1]);
+  std::string filename = argv[1];
+  csvInfo csv = read_csv("../data/" + filename);
 
   //  number of principal components to find
   int ncomponents = std::stoi(argv[2]);
@@ -45,8 +47,6 @@ int main(int argc, const char *argv[]) {
   std::cout << "tolerance " << tolerance << "\n";
   std::cout << "max_sweeps " << max_sweeps << "\n";
   std::cout << "economy " << economy << "\n";
-
-
 
   printf("Calling PCA with n_components %d ", ncomponents);
   printf("samples %d features %d \n", csv.rows, csv.cols);
