@@ -23,16 +23,22 @@ int main(int argc, const char *argv[]) {
   //  parse input arguments
   std::string filename = argv[1];
   int ncomponents = std::stoi(argv[2]);
+  const float tolerance = std::atof(argv[3]);
+  const int max_sweeps = std::stoi(argv[4]);
+  const int economy = std::stoi(argv[5]);
+  bool verbose = false;
+  if (std::stoi(argv[6]) > 0){
+    verbose = true;
+  }
+
   assert(ncomponents > 0);
+  std::cout << "ncomponents " << ncomponents << "\n";
+  std::cout << "tolerance " << tolerance << "\n";
+  std::cout << "max_sweeps " << max_sweeps << "\n";
+  std::cout << "economy " << economy << "\n";
 
   //  load data
   csvInfo csv = read_csv("../data/" + filename);
-
-  //  call PCA 
-  const float tolerance = 1.e-15;
-  const int max_sweeps = 2500;
-  const int economy = 1;
-  bool verbose = false;
 
   printf("Calling PCA with n_components %d ", ncomponents);
   printf("samples %d features %d \n", csv.rows, csv.cols);
@@ -42,6 +48,8 @@ int main(int argc, const char *argv[]) {
   tl->stop(total_time);
   printf("TOTAL Time measured: %.3f seconds.\n", total_time->time_ms);
   write_logs(tl);
+
+  
   //  write results to disk
   write_matrix_csv("../output/" + filename, ret.matrix, ret.rows, ret.cols);
   write_matrix_csv("../output/S_" + filename, ret.S, min(csv.cols, csv.rows), 1);

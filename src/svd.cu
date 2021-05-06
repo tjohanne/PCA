@@ -1,10 +1,3 @@
-/*
- * How to compile (assume cuda is installed at /usr/local/cuda/)
- *   nvcc -c -I/usr/local/cuda/include gesvdj_example.cpp
- *   g++ -o gesvdj_example gesvdj_example.o -L/usr/local/cuda/lib64 -lcudart
- * -lcusolver
- *   TODO check nvcc flag?
- */
 #include "include/svd.cuh"
 #include <assert.h>
 #include <cuda_runtime.h>
