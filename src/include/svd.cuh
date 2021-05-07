@@ -1,9 +1,10 @@
+#pragma once
+#include "cublas_v2.h"
+#include <cuda_runtime.h>
+#include <cusolverDn.h>
 typedef struct SVD {
     float* U;
     float* S;
     float* V;
 } svd_t;
-void printMatrix(int m, int n, const float *A, int lda, const char *name);
-void printMatrixcsv(int m, int n, const float *A, int lda, const char *name);
-svd_t perform_svd(float* A, int m, int n, int economy, const float tolerance, const int max_sweeps, bool verbose);
-void printVector(int m, const float *A, const char *name);
+svd_t perform_svd(float* d_A, int m, int n, int economy, const float tolerance, const int max_sweeps, bool verbose, cusolverDnHandle_t cusolverH);
