@@ -1,5 +1,4 @@
 #include "include/svdapprox.cuh"
-#include "include/debugFunctions.cuh"
 #include "include/stats.cuh"
 #include "include/gpuasserts.cuh"
 #include <assert.h>
@@ -19,7 +18,7 @@ svd_t perform_svd_approx(float *d_A, int m, int n, int n_components, int batch_s
     const int lda = m;
     const int ldu = m;
     const int ldv = n;
-    const int rank = n_components;
+    const int rank = n;
     const long long int strideA = (long long int)lda*n;
     const long long int strideS = n;
     const long long int strideU = (long long int)ldu*n;
@@ -112,6 +111,7 @@ svd_t perform_svd_approx(float *d_A, int m, int n, int n_components, int batch_s
     if (d_work ) cudaFree(d_work);
     if (stream ) cudaStreamDestroy(stream);
     SVD svd;
+    // print_host_matrix()
     svd.S = d_S;
     svd.V = d_V;
     svd.U = d_U;

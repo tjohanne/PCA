@@ -7,4 +7,5 @@ typedef struct SVD {
     float* S;
     float* V;
 } svd_t;
-svd_t perform_svd(float* d_A, int m, int n, int economy, const float tolerance, const int max_sweeps, bool verbose, cusolverDnHandle_t cusolverH);
+svd_t perform_svd(float* d_A, int m, int n, int economy, const float tolerance, 
+        const int max_sweeps, bool verbose, cusolverDnHandle_t cusolverH);
