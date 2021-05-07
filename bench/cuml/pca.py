@@ -28,9 +28,9 @@ print("CUML Running PCA with {} features, {} samples, and {} n_components on dat
 pca = PCA(n_components=min(X.shape)
         , copy=True
         , whiten=False
-        , svd_solver='full'
-        , tol=1.e-9
-        , iterated_power=200
+        , svd_solver='jacobi'
+        , tol=1.e-3
+        , iterated_power=15
         , random_state=42)
 time_fit_transform = dt.now()
 X_transformed = pca.fit_transform(X)

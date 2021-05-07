@@ -11,7 +11,7 @@ cd ../objs &&
 
 DATA=mnist_784.csv
 NCOMP=784
-TOL=1.e-7
+TOL=1.e-3
 MAXSWEEPS=150
 ECON=1
 VERBOSITY=0
