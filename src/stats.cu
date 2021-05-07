@@ -1,6 +1,6 @@
 #include "include/stats.cuh"
 #include "include/gpuasserts.cuh"
-
+// #include "debugFunctions.cu"
 /**
  * @brief Takes a matrix thats been summed r
  * 
@@ -34,6 +34,22 @@ __global__ void subtract(float *matrix, float *averages, int m, int n) {
   __syncthreads();
 }
 
+float* row_to_column_order(float *d_matrix, int M, int N, int batch_size, cublasHandle_t handle) {
+  float alpha = 1.0;
+  float beta = 0.0;
+  float *clonem = NULL;
+  cudaCheckError(cudaMalloc((void **)&clonem, M * N * sizeof(float)));
+  int m = M / batch_size;
+  int stride = m * N;
+  float* clonenext = clonem;
+  for(int i = 0; i < batch_size; i++) {
+    cublasCheckError(cublasSgeam(handle, CUBLAS_OP_T, CUBLAS_OP_N, m, N, &alpha,
+                               d_matrix, N, &beta, d_matrix, M, clonenext, m));
+    clonenext += stride;
+    d_matrix += stride;
+  }
+  return clonem;
+}
 
 /**
  * @brief Centers the original input matrix by computing 
@@ -45,11 +61,10 @@ __global__ void subtract(float *matrix, float *averages, int m, int n) {
  * @param N 
  * @return float* 
  */
-float *mean_shift(float *matrix, int M, int N, cublasHandle_t handle) {
+float *mean_shift(float *matrix, int M, int N, int batch_size, cublasHandle_t handle) {
   float *x = new float[M];
   float *y = new float[N];
   float *d_matrix = NULL;
-  float *clonem = NULL;
   float *d_x = NULL;
   float *d_y = NULL;
   float alpha = 1.0;
@@ -61,7 +76,6 @@ float *mean_shift(float *matrix, int M, int N, cublasHandle_t handle) {
     y[i] = 0.0f;
   }
   cudaCheckError(cudaMalloc((void **)&d_matrix, M * N * sizeof(float)));
-  cudaCheckError(cudaMalloc((void **)&clonem, M * N * sizeof(float)));
   cudaCheckError(cudaMalloc((void **)&d_x, M * sizeof(float)));
   cudaCheckError(cudaMalloc((void **)&d_y, N * sizeof(float)));
 
@@ -96,8 +110,7 @@ float *mean_shift(float *matrix, int M, int N, cublasHandle_t handle) {
   subtract<<<bs, tpb>>>(d_matrix, d_y, M, N);
   cudaCheckError(cudaDeviceSynchronize());
 
-  cublasCheckError(cublasSgeam(handle, CUBLAS_OP_T, CUBLAS_OP_N, M, N, &alpha,
-                               d_matrix, N, &beta, d_matrix, M, clonem, M));
+  float* clonem = row_to_column_order(d_matrix, M, N, batch_size, handle);  
   if (d_y)
     cudaCheckError(cudaFree(d_y));
   if (d_x)
@@ -110,3 +123,28 @@ float *mean_shift(float *matrix, int M, int N, cublasHandle_t handle) {
     free(y);
   return clonem;
 }
+
+// int main() {
+//   float A[12] = {1.0, 2.0, 4.0, 5.0, 2.0, 1.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0};
+//   float *a = new float[12];
+//   int mrows = 6;
+//   int ncols = 2;
+//   memcpy(a, A, 12 * sizeof(float));
+//   print_cpu_matrix(mrows, ncols, A);
+//   float *d_A = NULL;
+//   cudaCheckError(cudaMalloc((void **)&d_A, 12 * sizeof(float)));
+//   cudaCheckError(cudaMemcpy(d_A, a, 12 * sizeof(float), cudaMemcpyHostToDevice));
+//   cudaCheckError(cudaDeviceSynchronize());
+
+//   cusolverDnHandle_t cusolverH = NULL;
+//   cublasHandle_t cublasH = NULL;
+//   cusolverCheckError(cusolverDnCreate(&cusolverH));
+//   cublasCheckError(cublasCreate(&cublasH));
+//   print_device_vector(ncols * mrows, d_A);
+//   float* d_batch = row_to_column_order(d_A, mrows, ncols, 2, cublasH);
+//   float* d_norm = row_to_column_order(d_A, mrows, ncols, 1, cublasH);
+//   print_device_vector(ncols * mrows, d_A);
+//   printf("\n");
+//   print_device_vector(ncols * mrows, d_batch);
+//   print_device_vector(ncols * mrows, d_norm);
+// }

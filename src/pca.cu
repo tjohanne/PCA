@@ -8,6 +8,7 @@
 #include "include/svd.cuh"
 #include "include/svdapprox.cuh"
 #include "include/gpuasserts.cuh"
+#include "debugFunctions.cu"
 #ifndef min
 #define min(a, b) ((a < b) ? a : b)
 #endif
@@ -91,33 +92,46 @@ float *pca_from_S_U(svd_t svd, int M, int N, int k) {
  * @param tl 
  * @return float_matrix_t 
  */
-float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents, const int econ, const float tol, 
-                            const int max_sweeps, const bool verbose, TimeLogger* tl) {
+float_matrix_t perform_pca(float *matrix, int M, int N, int n_components, const int econ, const float tol, 
+                            const int max_sweeps, const bool verbose, TimeLogger* tl, std::string solver) {
   TimeLogger::timeLog* perform_pca_log;
   TimeLogger::timeLog* mean_shift_log;
   TimeLogger::timeLog* perform_svd_log;
   TimeLogger::timeLog* memcpy_log;
   TimeLogger::timeLog* pca_S_U_log;
+  svd_t svd;
   // initialize handlers
   cusolverDnHandle_t cusolverH = NULL;
   cublasHandle_t cublasH = NULL;
   cusolverCheckError(cusolverDnCreate(&cusolverH));
   cublasCheckError(cublasCreate(&cublasH));
+  int batch_size = 1;
+  if(solver == "approx") {
+    batch_size = 1;
+  }
   if(tl != NULL) {
     perform_pca_log = tl->start("perform_pca()");
     mean_shift_log = tl->start("mean_shift()");
   }
-  float *d_matrix = mean_shift(matrix, M, N, cublasH);
+  float *d_matrix = mean_shift(matrix, M, N, batch_size, cublasH);
   if(tl != NULL) {
     cudaCheckError(cudaDeviceSynchronize());
     tl->stop(mean_shift_log);
     perform_svd_log = tl->start("perform_svd()");
   }
-  // svd_t svd =
-  //     perform_svd(d_matrix, M, N, econ, tol, max_sweeps, verbose, cusolverH);
-  int batch_size = 16;
-  svd_t svd =
-      perform_svd_approx(d_matrix, M, N, n_components, batch_size, econ, tol, max_sweeps, verbose, cusolverH);
+  if(solver == "jacobi") {
+    svd = perform_svd(d_matrix, M, N, econ, tol, max_sweeps, verbose, cusolverH);
+  }
+  else if(solver == "approx") {
+    // float *d_A, int m, int n, int batch_size, int economy, const float tolerance,
+                  // const int max_sweeps, bool verbose, cusolverDnHandle_t cusolverH);
+    svd =
+        perform_svd_approx(d_matrix, M, N, n_components, batch_size, econ, tol, max_sweeps, verbose, cusolverH);
+  }
+  else {
+    std::cout << "Wrong solver specified " << std::endl;
+    exit(1);
+  }
 
   float_matrix_t svd_out;
   if(tl != NULL) {
@@ -137,9 +151,9 @@ float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents, const i
     tl->stop(memcpy_log);
     pca_S_U_log = tl->start("pca_from_S_U");
   }
-  svd_out.matrix = pca_from_S_U(svd, M, N, ncomponents);
+  svd_out.matrix = pca_from_S_U(svd, M, N, n_components);
   svd_out.rows = M;
-  svd_out.cols = ncomponents;
+  svd_out.cols = n_components;
   if(tl != NULL) {
     cudaCheckError(cudaDeviceSynchronize());
     if(tl != NULL) { 
