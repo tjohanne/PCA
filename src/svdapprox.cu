@@ -12,14 +12,14 @@
 #ifndef max
 #define max(a, b) ((a > b) ? a : b)
 #endif
-svd_t perform_svd_approx(float *d_A, int m, int n, int batch_size, int economy, const float tolerance,
+svd_t perform_svd_approx(float *d_A, int m, int n, int n_components, int batch_size, int economy, const float tolerance,
                   const int max_sweeps, bool verbose, cusolverDnHandle_t cusolverH) {
     cudaStream_t stream = NULL;
     m /= batch_size; // TODO is this needed?
     const int lda = m;
     const int ldu = m;
     const int ldv = n;
-    const int rank = n;
+    const int rank = n_components;
     const long long int strideA = (long long int)lda*n;
     const long long int strideS = n;
     const long long int strideU = (long long int)ldu*n;

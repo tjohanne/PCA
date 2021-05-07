@@ -113,11 +113,11 @@ float_matrix_t perform_pca(float *matrix, int M, int N, int ncomponents, const i
     tl->stop(mean_shift_log);
     perform_svd_log = tl->start("perform_svd()");
   }
-  svd_t svd =
-      perform_svd(d_matrix, M, N, econ, tol, max_sweeps, verbose, cusolverH);
-  // int batch_size = 16;
   // svd_t svd =
-  //     perform_svd_approx(d_matrix, M, N, batch_size, econ, tol, max_sweeps, verbose, cusolverH);
+  //     perform_svd(d_matrix, M, N, econ, tol, max_sweeps, verbose, cusolverH);
+  int batch_size = 16;
+  svd_t svd =
+      perform_svd_approx(d_matrix, M, N, n_components, batch_size, econ, tol, max_sweeps, verbose, cusolverH);
 
   float_matrix_t svd_out;
   if(tl != NULL) {
