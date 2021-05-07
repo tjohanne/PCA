@@ -37,10 +37,10 @@ void print_cpu_matrix(int m, int n, const float *A) {
 /**
  * @brief Prints m x n matrix A on device memory. 
  */
-void print_host_matrix(int m, int n, const float *A) {
+void print_device_matrix(int m, int n, const float *A) {
   float *tempmatrix;
   tempmatrix = (float *)malloc(sizeof(float) * m * n);
-  cudaMemcpy(tempmatrix, A, sizeof(float) * m * n, cudaMemcpyHostToDevice);
+  cudaMemcpy(tempmatrix, A, sizeof(float) * m * n, cudaMemcpyDeviceToHost);
   for (int row = 0; row < m; row++) {
     for (int col = 0; col < n; col++) {
       float Areg = tempmatrix[col + row * n];
@@ -48,6 +48,20 @@ void print_host_matrix(int m, int n, const float *A) {
     }
     printf("\n");
   }
+}
+
+/**
+ * @brief Prints m vector A on device memory. 
+ */
+void print_device_vector(int m, const float *A) {
+  float *tempmatrix;
+  tempmatrix = (float *)malloc(sizeof(float) * m);
+  cudaMemcpy(tempmatrix, A, sizeof(float) * m, cudaMemcpyDeviceToHost);
+  for (int row = 0; row < m; row++) {
+    float Areg = tempmatrix[row];
+    printf("(%d)%.3f,", row, Areg);
+  }
+  printf("\n");
 }
 
 void printVector(int m, const float *A, const char *name) {
