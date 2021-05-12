@@ -6,21 +6,17 @@ cd ../src &&
 make clean && make -j 32 &&
 cd ../objs &&
 
-# echo "IRIS PCA"
-# ./cudaPca iris.csv 4
 
-# DATA=iris.csv
 DATA=mnist_784.csv
 NCOMP=784
 TOL=1.e-3
 MAXSWEEPS=15
 ECON=1
 VERBOSITY=0
-#jacobi or approx solver
-# SOLVER=approx
 SOLVER=jacobi
-echo "mnist 784" &&
-./cudaPca $DATA $NCOMP $TOL $MAXSWEEPS $ECON $VERBOSITY $SOLVER
+echo "MNIST PCA"
+nsys profile --stats=true ./cudaPca $DATA $NCOMP $TOL $MAXSWEEPS $ECON $VERBOSITY $SOLVER
 
-# echo "EIGENFACES PCA"
-# ./cudaPca face_data.csv 400
+
+
+
