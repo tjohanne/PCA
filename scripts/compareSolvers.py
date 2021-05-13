@@ -10,17 +10,31 @@ sk_files = []
 for dataset in datasets:
     for kernel in kernels:
         for matrix in matrices:
-            cuml_files.append("CUMLSKPCA_" + dataset + "_" + kernel + "_" + matrix + ".csv")
+            cuml_files.append("CUMLKPCA_" + dataset + "_" + kernel + "_" + matrix + ".csv")
             sk_files.append("SKKPCA_" + dataset + "_" + kernel + "_" + matrix + ".csv")
+
+
+
 print("cuml files", cuml_files)
 print("sk_files files", sk_files)
 for cuml, skpca in list(zip(cuml_files, sk_files)):
         print("Checking ", cuml, skpca)
         cuml_m = np.absolute(pd.read_csv(data_folder + cuml).values)
         sk_m = np.absolute(pd.read_csv(data_folder + skpca, header=None).values)
+
+        # trim to scikit learn's ncomponents
         if "lambdas" not in cuml:
             cuml_m = cuml_m.T
+            cuml_m = cuml_m[:, :sk_m.shape[-1]]
+        else:
+            cuml_m = cuml_m[:sk_m.shape[0]]
+            # print(cuml_m.shape)
+
+        print(f"cuml vals: {cuml_m[:2]}")
+        print(f"sk_m vals: {sk_m[:2]}")
         idx = zip(*np.where(~np.isclose(cuml_m, sk_m, rtol=1e-1)))
+
+
         counter = 0
         for x, y in idx:
             print("x y", x, y)
@@ -28,10 +42,19 @@ for cuml, skpca in list(zip(cuml_files, sk_files)):
             counter += 1
             if counter > 4:
                 break
+
+
+
         if(not np.allclose(cuml_m, sk_m, rtol=1e-1)):
             print("MISMATCH cuml", cuml, " skpca", skpca)
             print("First 20 cuml ", cuml_m[:10, :10])
             print("First 20 sk_m ", sk_m[:10, :10])
+
+
+
+
+
+
 
 # jacobi_data = "../output/jacobi_"
 # approx_data = "../output/approx_"
