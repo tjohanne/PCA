@@ -1,6 +1,6 @@
 #include "include/stats.cuh"
 #include "include/gpuasserts.cuh"
-// #include "debugFunctions.cu"
+#include "debugFunctions.cu"
 /**
  * @brief Takes a matrix thats been summed r
  * 
@@ -124,27 +124,27 @@ float *mean_shift(float *matrix, int M, int N, int batch_size, cublasHandle_t ha
   return clonem;
 }
 
-// int main() {
-//   float A[12] = {1.0, 2.0, 4.0, 5.0, 2.0, 1.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0};
-//   float *a = new float[12];
-//   int mrows = 6;
-//   int ncols = 2;
-//   memcpy(a, A, 12 * sizeof(float));
-//   print_cpu_matrix(mrows, ncols, A);
-//   float *d_A = NULL;
-//   cudaCheckError(cudaMalloc((void **)&d_A, 12 * sizeof(float)));
-//   cudaCheckError(cudaMemcpy(d_A, a, 12 * sizeof(float), cudaMemcpyHostToDevice));
-//   cudaCheckError(cudaDeviceSynchronize());
+int main() {
+  float A[12] = {1.0, 2.0, 4.0, 5.0, 2.0, 1.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0};
+  float *a = new float[12];
+  int mrows = 4;
+  int ncols = 3;
+  memcpy(a, A, 12 * sizeof(float));
+  print_cpu_matrix(mrows, ncols, A);
+  float *d_A = NULL;
+  cudaCheckError(cudaMalloc((void **)&d_A, 12 * sizeof(float)));
+  cudaCheckError(cudaMemcpy(d_A, a, 12 * sizeof(float), cudaMemcpyHostToDevice));
+  cudaCheckError(cudaDeviceSynchronize());
 
-//   cusolverDnHandle_t cusolverH = NULL;
-//   cublasHandle_t cublasH = NULL;
-//   cusolverCheckError(cusolverDnCreate(&cusolverH));
-//   cublasCheckError(cublasCreate(&cublasH));
-//   print_device_vector(ncols * mrows, d_A);
-//   float* d_batch = row_to_column_order(d_A, mrows, ncols, 2, cublasH);
-//   float* d_norm = row_to_column_order(d_A, mrows, ncols, 1, cublasH);
-//   print_device_vector(ncols * mrows, d_A);
-//   printf("\n");
-//   print_device_vector(ncols * mrows, d_batch);
-//   print_device_vector(ncols * mrows, d_norm);
-// }
+  cusolverDnHandle_t cusolverH = NULL;
+  cublasHandle_t cublasH = NULL;
+  cusolverCheckError(cusolverDnCreate(&cusolverH));
+  cublasCheckError(cublasCreate(&cublasH));
+  // print_device_vector(ncols * mrows, d_A);
+  float* d_batch = row_to_column_order(d_A, mrows, ncols, 2, cublasH);
+  float* d_norm = row_to_column_order(d_A, mrows, ncols, 1, cublasH);
+  print_device_vector(ncols * mrows, d_A);
+  printf("\n");
+  print_device_vector(ncols * mrows, d_batch);
+  print_device_vector(ncols * mrows, d_norm);
+}

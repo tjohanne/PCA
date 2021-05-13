@@ -9,16 +9,17 @@ cd ../objs &&
 # echo "IRIS PCA"
 # ./cudaPca iris.csv 4
 
-# DATA=iris.csv
-DATA=mnist_784.csv
-NCOMP=784
+DATA=iris.csv
+NCOMP=4
+# DATA=mnist_784.csv
+# NCOMP=784
 TOL=1.e-3
 MAXSWEEPS=150
 ECON=1
 VERBOSITY=0
 #jacobi or approx solver
-# SOLVER=approx
-SOLVER=jacobi
+SOLVER=approx
+# SOLVER=jacobi
 echo "mnist 784" &&
 ./cudaPca $DATA $NCOMP $TOL $MAXSWEEPS $ECON $VERBOSITY $SOLVER
 

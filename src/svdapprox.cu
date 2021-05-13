@@ -15,6 +15,7 @@ svd_t perform_svd_approx(float *d_A, int m, int n, int n_components, int batch_s
                   const int max_sweeps, bool verbose, cusolverDnHandle_t cusolverH) {
     cudaStream_t stream = NULL;
     m /= batch_size; // TODO is this needed?
+    printf("m %d n %d bs %d\n", m, n, batch_size);
     const int lda = m;
     const int ldu = m;
     const int ldv = n;

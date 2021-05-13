@@ -113,12 +113,27 @@ float_matrix_t perform_pca(float *matrix, int M, int N, int n_components, const 
     perform_pca_log = tl->start("perform_pca()");
     mean_shift_log = tl->start("mean_shift()");
   }
-  float *d_matrix = mean_shift(matrix, M, N, batch_size, cublasH);
+  float *d_matrix = mean_shift(matrix, M, N, 1, cublasH);
+
+
+    float A[12] = {1.0, 4.0, 2.0, 2.0, 5.0, 1.0, 10.0, 8.0, 6.0, 9.0, 7.0, 5.0};
+    float *a = new float[12];
+    int mrows = 6;
+    int ncols = 2;
+    memcpy(a, A, 12 * sizeof(float));
+    print_cpu_matrix(mrows, ncols, A);
+    float *d_A = NULL;
+    cudaCheckError(cudaMalloc((void **)&d_A, 12 * sizeof(float)));
+    cudaCheckError(cudaMemcpy(d_A, a, 12 * sizeof(float), cudaMemcpyHostToDevice));
+    cudaCheckError(cudaDeviceSynchronize());
+
+
   if(tl != NULL) {
     cudaCheckError(cudaDeviceSynchronize());
     tl->stop(mean_shift_log);
     perform_svd_log = tl->start("perform_svd()");
   }
+  printf("Solver %s\n", solver.c_str());
   if(solver == "jacobi") {
     svd = perform_svd(d_matrix, M, N, econ, tol, max_sweeps, verbose, cusolverH);
   }
@@ -132,7 +147,7 @@ float_matrix_t perform_pca(float *matrix, int M, int N, int n_components, const 
     std::cout << "Wrong solver specified " << std::endl;
     exit(1);
   }
-
+  print_device_vector(4, d_A);
   float_matrix_t svd_out;
   if(tl != NULL) {
     cudaCheckError(cudaDeviceSynchronize());
