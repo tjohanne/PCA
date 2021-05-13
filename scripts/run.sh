@@ -18,7 +18,7 @@ MAXSWEEPS=15
 ECON=1
 VERBOSITY=0
 #jacobi or approx solver
-SOLVER=approx
+SOLVER=jacobi
 # SOLVER=jacobi
 echo "mnist 784" &&
 ./cudaPca $DATA $NCOMP $TOL $MAXSWEEPS $ECON $VERBOSITY $SOLVER
