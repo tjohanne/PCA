@@ -6,15 +6,21 @@ cd ../src &&
 make clean && make -j 32 &&
 cd ../objs &&
 
+# echo "IRIS PCA"
+# ./cudaPca iris.csv 4
 
-DATA=mnist_784.csv
-NCOMP=784
+DATA=face_data.csv
+NCOMP=4
+# DATA=mnist_784.csv
+# NCOMP=784
 TOL=1.e-3
 MAXSWEEPS=15
 ECON=1
 VERBOSITY=0
+#jacobi or approx solver
 SOLVER=jacobi
-echo "MNIST PCA"
+# SOLVER=jacobi
+echo "iris 784" &&
 ncu -o profile --target-processes all --details-all --print-summary per-gpu --replay-mode application ./cudaPca $DATA $NCOMP $TOL $MAXSWEEPS $ECON $VERBOSITY $SOLVER
 
 

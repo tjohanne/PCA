@@ -1,7 +1,7 @@
 import numpy as np 
 import pandas as pd 
 
-datasets = ["iris"]
+datasets = ["mnist_784_1000"]
 data_folder = "../output/"
 matrices = ["alphas", "lambdas", "trans_data"]
 kernels = ["LINEAR", "RBF", "POLYNOMIAL"]
@@ -30,25 +30,27 @@ for cuml, skpca in list(zip(cuml_files, sk_files)):
             cuml_m = cuml_m[:sk_m.shape[0]]
             # print(cuml_m.shape)
 
-        print(f"cuml vals: {cuml_m[:2]}")
-        print(f"sk_m vals: {sk_m[:2]}")
-        idx = zip(*np.where(~np.isclose(cuml_m, sk_m, rtol=1e-1)))
+        # print(f"cuml vals: {cuml_m[:2]}")
+        # print(f"sk_m vals: {sk_m[:2]}")
+        idx = zip(*np.where(~np.isclose(cuml_m, sk_m, atol=0.2)))
 
 
         counter = 0
         for x, y in idx:
+            print("MISMATCH cuml", cuml, " skpca", skpca)
             print("x y", x, y)
-            print("MISMATCH idx", x, y, " cuml ", cuml_m[x][y], " sk_m", sk_m[x][y])
+            print("idx", x, y, " cuml ", cuml_m[x][y], " sk_m", sk_m[x][y])
             counter += 1
-            if counter > 4:
+            if counter > 5:
+                print("Skipping", len(list(idx)), "mismatches")
                 break
 
 
 
-        if(not np.allclose(cuml_m, sk_m, rtol=1e-1)):
+        if(not np.allclose(cuml_m, sk_m, atol=0.2)):
             print("MISMATCH cuml", cuml, " skpca", skpca)
-            print("First 20 cuml ", cuml_m[:10, :10])
-            print("First 20 sk_m ", sk_m[:10, :10])
+            print("First 2:2 cuml ", cuml_m[:2, :2])
+            print("First 2:2 sk_m ", sk_m[:2, :2])
 
 
 

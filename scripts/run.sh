@@ -9,8 +9,8 @@ cd ../objs &&
 # echo "IRIS PCA"
 # ./cudaPca iris.csv 4
 
-DATA=iris.csv
-NCOMP=4
+DATA=mnist_784.csv
+NCOMP=784
 # DATA=mnist_784.csv
 # NCOMP=784
 TOL=1.e-3
